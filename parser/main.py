@@ -40,27 +40,26 @@ def get_main_url(url: str):
     return main_url
 
 
-def get_adress(main_url: str, full=False):
-    protocol = 8  # len("https://")
+def get_main_domain(url: str):
+    url = url[:url.rfind(".")]
 
-    """
-    if main_url.startswith("https://www."):
-        protocol = 12
-        print(main_url[protocol:])
-    """
-
-    if not full:
-        dot_position = main_url.rfind(".")
-        return main_url[protocol:dot_position]
+    if "." in url:
+        url = url[url.rfind(".") + 1:]
     else:
-        return main_url[protocol:]
+        url = url[url.rfind("/") + 1:]
+
+    return url
 
 
-def process_link(main_url: str, link: str):
+def process_link(main_url: str, link: str, other_domains: bool):
     if "?" in link:
-        link = link[:link.rfind("?")]
+        link = link[:link.find("?")]
 
-    if get_adress(main_url, full=True) not in link:
+    pattern = get_main_domain(main_url) + "."
+    if not other_domains:
+        pattern += main_url[main_url.rfind(".") + 1:]
+
+    if pattern not in link:
         if link.startswith("/") or link.startswith("#"):
             if link == "/" or link == "#":
                 link = main_url
@@ -71,19 +70,29 @@ def process_link(main_url: str, link: str):
     elif not link.startswith("https://"):
         return None
 
+    if "&" in link:
+        link = link[:link.rfind("&")]
+
+    if "=" in link:
+        link = link[:link.find("=")]
+        link = link[:link.rfind("/") + 1]
+
     if "#" in link:
         link = link[:link.rfind("#")]
+
+    if link == main_url + "/":
+        link = link[:-1]
 
     return link
 
 
-def search_for_hrefs(main_url, page: str):
+def search_for_hrefs(main_url, page: str, other_domains: bool):
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
     cleaned_links = []
 
     for link in links:
-        processed_link = process_link(main_url, link['href'])
+        processed_link = process_link(main_url, link['href'], other_domains)
 
         if processed_link:
             cleaned_links.append(processed_link)
@@ -97,12 +106,12 @@ def run_for_pages():
     pass
 
 
-def scan_page(url: str):
+def scan_page(url: str, other_domains=False):
     main_url = get_main_url(url)
     page = request_for_page(url)
     print("scanning:", main_url)
-    dirt_links, links_on_page = search_for_hrefs(main_url, page)
-    return main_url, sorted(set(links_on_page))
+    dirt_links, links_on_page = search_for_hrefs(main_url, page, other_domains)
+    return sorted(set(links_on_page)), dirt_links
 
 
 def form_report(url: str, scanned_pages: int, found_pages: int, pages: list):
@@ -118,9 +127,9 @@ def write_report(main_url, links: list, temp=False):
     # scanned_pages = 1
 
     if not temp:
-        file_name = "samples/" + get_adress(main_url) + ".json"
+        file_name = "samples/" + get_main_domain(main_url) + ".json"
     else:
-        file_name = "samples/_" + get_adress(main_url) + ".json"
+        file_name = "temp/t_" + get_main_domain(main_url) + ".json"
 
     with open(file_name, "w") as file:
         # Стоит получше продумать структуру
@@ -129,19 +138,15 @@ def write_report(main_url, links: list, temp=False):
 
 
 if __name__ == "__main__":
-    # url = "https://dvmn.org/modules/"
-    # url = "https://edu.avosetrov.ru/"
-    # url = "https://gljewelry.com/about/"
-    # url = "https://spinit.dev/"
-
-    url = "https://www.google.ru/"
+    url = "https://dvmn.org/modules/"
     # url = "https://www.wikipedia.org/"
 
-    # url = "https://ru.wikipedia.org/wiki/Переменная_звезда"
-    # url = "https://docs-python.ru/tutorial/operatsii-tekstovymi-strokami-str-python/metod-str-rfind/"
-    # url = "https://stackoverflow.com/questions/5815747/beautifulsoup-getting-href/"
+    main_url = get_main_url(url)
+    links, dirt_links = scan_page(url)
 
-    main_url, links = scan_page(url)
+    # write_report(main_url, list(dirt_links), temp=True)
     write_report(main_url, list(links), temp=True)
+
+
 
 

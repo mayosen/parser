@@ -31,7 +31,7 @@ def read_all_samples():
 
 def test_parser(samples: list):
     for item in samples:
-        _, links = scan_page(item["url"])
+        links, _ = scan_page(item["url"])
         assert len(links) == item["found_pages"], \
             f"url: {item['url']} " \
             f"expected: {item['found_pages']} vs scanned: {len(links)} " \
