@@ -2,6 +2,7 @@ import requests
 from random import choice
 from bs4 import BeautifulSoup
 from collections import deque
+import json
 
 
 USER_AGENTS = [
@@ -39,30 +40,46 @@ def get_main_url(url: str):
     return main_url
 
 
+def get_domain(main_url: str, full=False):
+    protocol = 8
+
+    if not full:
+        dot_position = main_url.rfind(".")
+        return main_url[protocol:dot_position]
+    else:
+        slash_position = main_url[protocol:].find("/") + protocol
+        return main_url[protocol:slash_position]
+
+
 def process_link(main_url: str, link: str):
     # Очистка меток
-    utm_tag_position = link.rfind("?")
-    if utm_tag_position == 0:
+    tag_position = link.rfind("?")
+    if tag_position == 0:
         return None
-    elif utm_tag_position > 0:
+    elif tag_position > 0:
         # Больше нуля на случай, если "?" на первом месте, чтобы его не трогать
-        link = link[:utm_tag_position - 1]
+        link = link[:tag_position - 1]
 
     # Обработка нестандартных ссылок
     if main_url not in link:
-        if link.find(".") != -1 or link.find("://") != -1 or link.find("javascript") != -1:
-            # Внешняя ссылка или javascript
+        # if link.find("http") != -1:
+        #     return None
+
+        if link.find(":") != -1 or link.find("javascript") != -1:
             return None
+        # if link.find(".") != -1 or link.find(":") != -1 or link.find("javascript") != -1:
+        #     # Внешняя ссылка или javascript
+        #     return None
         else:
-            if "#" in link:
-                if link == "#":
-                    # Пустой якорь
-                    return main_url
-                else:
-                    return main_url + link[:link.rfind("#")]
+            if link == "/" or link == "#":
+                return main_url
+            elif "#" in link:
+                return main_url + link[:link.rfind("#")]
             else:
                 # Внутренняя ссылка
                 return main_url + link
+    else:
+        return link
 
 
 def search_for_hrefs(main_url, page: str):
@@ -76,25 +93,51 @@ def search_for_hrefs(main_url, page: str):
         if processed_link:
             cleaned_links.append(processed_link)
 
-    return cleaned_links
+    dirt_links = [link['href'] for link in links]
+
+    return dirt_links, cleaned_links
 
 
 def run_for_pages():
     pass
 
 
-url = "https://dvmn.org/modules/"
-# url = "https://ru.wikipedia.org/wiki/Переменная_звезда"
-# url = "https://docs-python.ru/tutorial/operatsii-tekstovymi-strokami-str-python/metod-str-rfind/"
-# url = "https://stackoverflow.com/questions/5815747/beautifulsoup-getting-href/"
-main_url = get_main_url(url)
-page = request_for_page(url)
-links_on_page = search_for_hrefs(main_url, page)
-# print(links_on_page)
-PAGES_FOUND.update(links_on_page)
-print(sorted(PAGES_FOUND), sep='\n')
+def scan_page(url: str):
+    main_url = get_main_url(url)
+    page = request_for_page(url)
+    print("scanning:", main_url)
+    _, links_on_page = search_for_hrefs(main_url, page)
+    return main_url, sorted(set(links_on_page))
 
 
-# with open("found.txt", "w") as f:
-#     f.write(str(sorted(PAGES_FOUND)))
+def form_report(url: str, scanned_pages: int, found_pages: int, pages: list):
+    return {
+        "url": url,
+        "scanned_pages": scanned_pages,
+        "found_pages": found_pages,
+        "pages": pages
+    }
+
+
+def write_report(main_url, links: list):
+    scanned_pages = 1
+    with open("samples/" + get_domain(main_url) + ".json", "w") as file:
+        # Стоит получше продумать структуру
+        report = form_report(url, 1, len(links), links),
+        json.dump(report, file, indent=4)
+
+
+if __name__ == "__main__":
+    # url = "https://dvmn.org/modules/"
+    # url = "https://edu.avosetrov.ru/"
+    # url = "https://gljewelry.com/about/"
+    url = "https://spinit.dev/"
+
+    # url = "https://ru.wikipedia.org/wiki/Переменная_звезда"
+    # url = "https://docs-python.ru/tutorial/operatsii-tekstovymi-strokami-str-python/metod-str-rfind/"
+    # url = "https://stackoverflow.com/questions/5815747/beautifulsoup-getting-href/"
+
+    # main_url, links = scan_page(url)
+    # write_report(main_url, list(links))
+    print(get_domain(url))
 
