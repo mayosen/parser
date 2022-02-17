@@ -17,11 +17,10 @@ def read_sample(filename: str):
 
 
 def read_all_samples():
-    sample_names = listdir("samples/")
-    print("comparing w/ samples:", sample_names)
+    sample_files = listdir("samples/")
     samples = []
 
-    for sample in sample_names:
+    for sample in sample_files:
         samples.append(read_sample("samples/" + sample))
 
     return samples
@@ -40,5 +39,4 @@ def test_parser(samples: list):
 
 if __name__ == "__main__":
     test_parser(read_all_samples())
-
 

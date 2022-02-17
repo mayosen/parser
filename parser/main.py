@@ -40,46 +40,35 @@ def get_main_url(url: str):
     return main_url
 
 
-def get_domain(main_url: str, full=False):
-    protocol = 8
+def get_adress(main_url: str, full=False):
+    protocol = 8  # len("https://")
 
     if not full:
         dot_position = main_url.rfind(".")
         return main_url[protocol:dot_position]
     else:
-        slash_position = main_url[protocol:].find("/") + protocol
-        return main_url[protocol:slash_position]
+        return main_url[8:]
 
 
 def process_link(main_url: str, link: str):
-    # Очистка меток
-    tag_position = link.rfind("?")
-    if tag_position == 0:
-        return None
-    elif tag_position > 0:
-        # Больше нуля на случай, если "?" на первом месте, чтобы его не трогать
-        link = link[:tag_position - 1]
+    if "?" in link:
+        link = link[:link.rfind("?")]
 
-    # Обработка нестандартных ссылок
-    if main_url not in link:
-        # if link.find("http") != -1:
-        #     return None
-
-        if link.find(":") != -1 or link.find("javascript") != -1:
-            return None
-        # if link.find(".") != -1 or link.find(":") != -1 or link.find("javascript") != -1:
-        #     # Внешняя ссылка или javascript
-        #     return None
-        else:
+    if get_adress(main_url, True) not in link:
+        if link.startswith("/") or link.startswith("#"):
             if link == "/" or link == "#":
-                return main_url
-            elif "#" in link:
-                return main_url + link[:link.rfind("#")]
+                link = main_url
             else:
-                # Внутренняя ссылка
-                return main_url + link
-    else:
-        return link
+                link = main_url + link
+        else:
+            return None
+    elif not link.startswith("https://"):
+        return None
+
+    if "#" in link:
+        link = link[:link.rfind("#")]
+
+    return link
 
 
 def search_for_hrefs(main_url, page: str):
@@ -106,7 +95,7 @@ def scan_page(url: str):
     main_url = get_main_url(url)
     page = request_for_page(url)
     print("scanning:", main_url)
-    _, links_on_page = search_for_hrefs(main_url, page)
+    dirt_links, links_on_page = search_for_hrefs(main_url, page)
     return main_url, sorted(set(links_on_page))
 
 
@@ -120,8 +109,8 @@ def form_report(url: str, scanned_pages: int, found_pages: int, pages: list):
 
 
 def write_report(main_url, links: list):
-    scanned_pages = 1
-    with open("samples/" + get_domain(main_url) + ".json", "w") as file:
+    # scanned_pages = 1
+    with open("samples/" + get_adress(main_url) + ".json", "w") as file:
         # Стоит получше продумать структуру
         report = form_report(url, 1, len(links), links),
         json.dump(report, file, indent=4)
@@ -137,7 +126,7 @@ if __name__ == "__main__":
     # url = "https://docs-python.ru/tutorial/operatsii-tekstovymi-strokami-str-python/metod-str-rfind/"
     # url = "https://stackoverflow.com/questions/5815747/beautifulsoup-getting-href/"
 
-    # main_url, links = scan_page(url)
+    main_url, links = scan_page(url)
     # write_report(main_url, list(links))
-    print(get_domain(url))
+
 
