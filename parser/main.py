@@ -60,7 +60,7 @@ def process_link(main_url: str, link: str):
     if "?" in link:
         link = link[:link.rfind("?")]
 
-    if get_adress(main_url, True) not in link:
+    if get_adress(main_url, full=True) not in link:
         if link.startswith("/") or link.startswith("#"):
             if link == "/" or link == "#":
                 link = main_url
@@ -133,14 +133,15 @@ if __name__ == "__main__":
     # url = "https://edu.avosetrov.ru/"
     # url = "https://gljewelry.com/about/"
     # url = "https://spinit.dev/"
-    # url = "https://www.wikipedia.org/"
+
     url = "https://www.google.ru/"
+    # url = "https://www.wikipedia.org/"
 
     # url = "https://ru.wikipedia.org/wiki/Переменная_звезда"
     # url = "https://docs-python.ru/tutorial/operatsii-tekstovymi-strokami-str-python/metod-str-rfind/"
     # url = "https://stackoverflow.com/questions/5815747/beautifulsoup-getting-href/"
 
     main_url, links = scan_page(url)
-    write_report(main_url, list(links), True)
+    write_report(main_url, list(links), temp=True)
 
 

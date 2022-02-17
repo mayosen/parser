@@ -4,7 +4,7 @@ from main import scan_page
 
 
 def read_sample(filename: str):
-    # Пока только для 1 сканированный страницы.
+    # Пока только для 1 сканированной страницы.
 
     with open(filename, "r") as file:
         report = json.load(file)
