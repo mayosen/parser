@@ -43,11 +43,17 @@ def get_main_url(url: str):
 def get_adress(main_url: str, full=False):
     protocol = 8  # len("https://")
 
+    """
+    if main_url.startswith("https://www."):
+        protocol = 12
+        print(main_url[protocol:])
+    """
+
     if not full:
         dot_position = main_url.rfind(".")
         return main_url[protocol:dot_position]
     else:
-        return main_url[8:]
+        return main_url[protocol:]
 
 
 def process_link(main_url: str, link: str):
@@ -108,9 +114,15 @@ def form_report(url: str, scanned_pages: int, found_pages: int, pages: list):
     }
 
 
-def write_report(main_url, links: list):
+def write_report(main_url, links: list, temp=False):
     # scanned_pages = 1
-    with open("samples/" + get_adress(main_url) + ".json", "w") as file:
+
+    if not temp:
+        file_name = "samples/" + get_adress(main_url) + ".json"
+    else:
+        file_name = "samples/_" + get_adress(main_url) + ".json"
+
+    with open(file_name, "w") as file:
         # Стоит получше продумать структуру
         report = form_report(url, 1, len(links), links),
         json.dump(report, file, indent=4)
@@ -120,13 +132,15 @@ if __name__ == "__main__":
     # url = "https://dvmn.org/modules/"
     # url = "https://edu.avosetrov.ru/"
     # url = "https://gljewelry.com/about/"
-    url = "https://spinit.dev/"
+    # url = "https://spinit.dev/"
+    # url = "https://www.wikipedia.org/"
+    url = "https://www.google.ru/"
 
     # url = "https://ru.wikipedia.org/wiki/Переменная_звезда"
     # url = "https://docs-python.ru/tutorial/operatsii-tekstovymi-strokami-str-python/metod-str-rfind/"
     # url = "https://stackoverflow.com/questions/5815747/beautifulsoup-getting-href/"
 
     main_url, links = scan_page(url)
-    # write_report(main_url, list(links))
+    write_report(main_url, list(links), True)
 
 

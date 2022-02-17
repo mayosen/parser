@@ -21,6 +21,9 @@ def read_all_samples():
     samples = []
 
     for sample in sample_files:
+        if sample.startswith("_"):
+            continue
+
         samples.append(read_sample("samples/" + sample))
 
     return samples
