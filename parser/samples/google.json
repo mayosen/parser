@@ -2,9 +2,9 @@
     {
         "url": "https://www.google.ru/",
         "scanned_pages": 1,
-        "found_pages": 10,
+        "found_pages": 9,
         "pages": [
-            "https://www.google.ru",
+            "https://www.google.ru/",
             "https://www.google.ru/advanced_search",
             "https://www.google.ru/history/optout",
             "https://www.google.ru/history/privacyadvisor/search/unauth",
@@ -12,7 +12,6 @@
             "https://www.google.ru/intl/ru/about/products",
             "https://www.google.ru/intl/ru_ru/ads/",
             "https://www.google.ru/preferences",
-            "https://www.google.ru/search",
             "https://www.google.ru/services/"
         ]
     }
