@@ -3,6 +3,8 @@ import json
 from random import choice
 from bs4 import BeautifulSoup
 from collections import deque
+from time import time
+from statistics import mean
 
 
 USER_AGENTS = [
@@ -19,9 +21,6 @@ USER_AGENTS = [
     ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/96.0.4664.55 Safari/537.36"),
 ]
-
-PAGES_TO_REQUEST = deque()
-PAGES_FOUND = set()
 
 
 def request_for_page(url):
@@ -88,7 +87,7 @@ def process_link(main_url: str, link: str, other_domains: bool):
     elif link.startswith("//"):
         protocol = main_url[:main_url.rfind("/") + 1]
         link = protocol + link[2:]
-    elif not link.startswith("https://"):
+    elif not (link.startswith("https://") or link.startswith("http://")):
         return None
 
     if "&" in link:
@@ -111,29 +110,25 @@ def process_link(main_url: str, link: str, other_domains: bool):
 def search_for_hrefs(main_url, page: str, other_domains: bool):
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
-    cleaned_links = []
+    clean_links = []
 
     for link in links:
         processed_link = process_link(main_url, link['href'], other_domains)
 
         if processed_link:
-            cleaned_links.append(processed_link)
+            clean_links.append(processed_link)
 
     dirt_links = [link['href'] for link in links]
 
-    return dirt_links, cleaned_links
-
-
-def run_for_pages():
-    pass
+    return clean_links, dirt_links
 
 
 def scan_page(url: str, other_domains=False):
     main_url = get_main_url(url)
     page = request_for_page(url)
-    print("scanning:", main_url + "/")
-    dirt_links, links_on_page = search_for_hrefs(main_url, page, other_domains)
-    return sorted(set(links_on_page)), dirt_links
+    print("scanning:", url)
+    clean_links, dirt_links = search_for_hrefs(main_url, page, other_domains)
+    return sorted(set(clean_links)), dirt_links
 
 
 def form_report(url: str, scanned_pages: int, found_pages: int, pages: list):
@@ -160,13 +155,78 @@ def write_report(url: str, links: list, postfix=""):
         json.dump(report, file, indent=4)
 
 
+PAGES_TO_SCAN = deque()
+PAGES_SCANNED = set()
+PAGES_FOUND = set()
+TIMES = []
+
+
+def run_for_pages(first_url: str):
+    global PAGES_TO_SCAN
+    global PAGES_SCANNED
+    global PAGES_FOUND
+    global TIMES
+
+    t_started = time()
+
+    PAGES_TO_SCAN.append(first_url)
+
+    counter = 1
+
+    while PAGES_TO_SCAN:
+
+        url = PAGES_TO_SCAN.popleft()
+
+        if url in PAGES_SCANNED:
+            continue
+
+        t_page_started = time()
+
+        links, _ = scan_page(url)
+        PAGES_SCANNED.add(url)
+        PAGES_TO_SCAN.extend(set(links) - PAGES_SCANNED)
+        PAGES_FOUND.update(links)
+
+        if counter % 10 == 0:
+            print(f"{counter}, pages to scan left: {len(PAGES_TO_SCAN)}")
+
+            if len(PAGES_SCANNED) > 500:
+                print("\nreached pages limit.")
+                break
+
+            if time() - t_started > 10:
+                print("\nreached time limit.")
+                break
+
+        TIMES.append(time() - t_page_started)
+
+        counter += 1
+
+
+
+    print(f"\ndone by {time() - t_started:.2f} secs.\n")
+
+
 if __name__ == "__main__":
     # url = "https://dvmn.org/modules/"
     # url = "https://www.google.ru/"
-    # # url = "https://spinit.dev/"
-    url = "https://www.wikipedia.org/"
+    # url = "https://spinit.dev/"
+    # url = "https://www.wikipedia.org/"
+    # url = "https://www.coursera.org/"
+    url = "http://www.avosetrov.ru/"
 
-    main_url = get_main_url(url)
-    links, dirt_links = scan_page(url)
-    write_report(url, list(links), "a")
-    write_report(url, dirt_links, "dirt")
+
+    run_for_pages(url)
+    print("scanned:", len(PAGES_SCANNED))
+    print("found:", len(PAGES_FOUND))
+    print()
+    print(f"mean time per page: {mean(TIMES):.2f}")
+    print(f"max time per page: {max(TIMES):.2f}")
+    print(f"min time per page: {min(TIMES):.2f}")
+
+    write_report(url, sorted(PAGES_FOUND), "test")
+
+    # links, dirt_links = scan_page(url)
+    # write_report(url, links)
+    # write_report(url, links, "a")
+    # write_report(url, dirt_links, "dirt")
