@@ -194,7 +194,7 @@ def run_for_pages(first_url: str):
                 print("\nreached pages limit.")
                 break
 
-            if time() - t_started > 10:
+            if time() - t_started > 5:
                 print("\nreached time limit.")
                 break
 
@@ -202,9 +202,13 @@ def run_for_pages(first_url: str):
 
         counter += 1
 
-
-
     print(f"\ndone by {time() - t_started:.2f} secs.\n")
+    print("scanned:", len(PAGES_SCANNED))
+    print("found:", len(PAGES_FOUND))
+    print()
+    print(f"mean time per page: {mean(TIMES):.2f}")
+    print(f"max time per page: {max(TIMES):.2f}")
+    print(f"min time per page: {min(TIMES):.2f}")
 
 
 if __name__ == "__main__":
@@ -215,15 +219,7 @@ if __name__ == "__main__":
     # url = "https://www.coursera.org/"
     url = "http://www.avosetrov.ru/"
 
-
     run_for_pages(url)
-    print("scanned:", len(PAGES_SCANNED))
-    print("found:", len(PAGES_FOUND))
-    print()
-    print(f"mean time per page: {mean(TIMES):.2f}")
-    print(f"max time per page: {max(TIMES):.2f}")
-    print(f"min time per page: {min(TIMES):.2f}")
-
     write_report(url, sorted(PAGES_FOUND), "test")
 
     # links, dirt_links = scan_page(url)
