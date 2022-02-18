@@ -7,12 +7,12 @@ def read_sample(filename: str):
     # Пока только для 1 сканированной страницы.
 
     with open(filename, "r") as file:
-        report = json.load(file)
+        report = json.load(file)[0]
 
     return {
-        "url": report[0]["url"],
-        "scanned_pages": report[0]["scanned_pages"],
-        "found_pages": report[0]["found_pages"],
+        "url": report["url"],
+        "scanned_pages": report["scanned_pages"],
+        "found_pages": report["found_pages"],
     }
 
 
@@ -37,8 +37,8 @@ def test_parser(samples: list):
         url = item["url"]
         links, dirt_links = scan_page(url)
         if len(links) != item["found_pages"]:
-            write_report(url, links, "clean")
-            write_report(url, dirt_links, "dirt")
+            write_report(url, links, "t_clean")
+            write_report(url, dirt_links, "t_dirt")
             raise BrokenScanPage(
                 f"url: {url} expected: {item['found_pages']} vs scanned: {len(links)}")
     else:

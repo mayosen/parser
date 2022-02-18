@@ -1,8 +1,8 @@
 import requests
+import json
 from random import choice
 from bs4 import BeautifulSoup
 from collections import deque
-import json
 
 
 USER_AGENTS = [
@@ -34,10 +34,11 @@ def request_for_page(url):
 
 
 def get_main_url(url: str):
-    dot_position = url.find(".")
-    slash_position = url.find("/", dot_position)
-    main_url = url[:slash_position]
-    return main_url
+    first_dot = url.find(".")
+    if "/" in url[first_dot:]:
+        url = url[:url.find("/", first_dot)]
+
+    return url
 
 
 def get_main_domain(url: str):
@@ -51,6 +52,21 @@ def get_main_domain(url: str):
     return url
 
 
+def is_other_site(url: str):
+    other = False
+
+    if "." in url:
+        if url.endswith(".html"):
+            url = url[:-5]
+        elif url.endswith(".htm"):
+            url = url[:-4]
+
+        if "." in url:
+            other = True
+
+    return other
+
+
 def process_link(main_url: str, link: str, other_domains: bool):
     if "?" in link:
         link = link[:link.find("?")]
@@ -62,16 +78,22 @@ def process_link(main_url: str, link: str, other_domains: bool):
     if pattern not in link:
         if link.startswith("/") or link.startswith("#"):
             if link == "/" or link == "#":
-                link = main_url
+                link = main_url + "/"
+            elif is_other_site(link):
+                return None
             else:
                 link = main_url + link
         else:
             return None
+    elif link.startswith("//"):
+        protocol = main_url[:main_url.rfind("/") + 1]
+        link = protocol + link[2:]
     elif not link.startswith("https://"):
         return None
 
     if "&" in link:
-        link = link[:link.rfind("&")]
+        link = link[:link.find("&")]
+        link = link[:link.rfind("/") + 1]
 
     if "=" in link:
         link = link[:link.find("=")]
@@ -80,8 +102,8 @@ def process_link(main_url: str, link: str, other_domains: bool):
     if "#" in link:
         link = link[:link.rfind("#")]
 
-    if link == main_url + "/":
-        link = link[:-1]
+    if link == main_url:
+        link += "/"
 
     return link
 
@@ -109,7 +131,7 @@ def run_for_pages():
 def scan_page(url: str, other_domains=False):
     main_url = get_main_url(url)
     page = request_for_page(url)
-    print("scanning:", main_url)
+    print("scanning:", main_url + "/")
     dirt_links, links_on_page = search_for_hrefs(main_url, page, other_domains)
     return sorted(set(links_on_page)), dirt_links
 
@@ -123,13 +145,14 @@ def form_report(url: str, scanned_pages: int, found_pages: int, pages: list):
     }
 
 
-def write_report(main_url, links: list, temp=False):
+def write_report(url: str, links: list, postfix=""):
     # scanned_pages = 1
 
-    if not temp:
-        file_name = "samples/" + get_main_domain(main_url) + ".json"
+    main_domain = get_main_domain(url)
+    if not postfix:
+        file_name = "samples/" + main_domain + ".json"
     else:
-        file_name = "temp/t_" + get_main_domain(main_url) + ".json"
+        file_name = "temp/_" + main_domain + "_" + postfix + ".json"
 
     with open(file_name, "w") as file:
         # Стоит получше продумать структуру
@@ -138,15 +161,12 @@ def write_report(main_url, links: list, temp=False):
 
 
 if __name__ == "__main__":
-    url = "https://dvmn.org/modules/"
-    # url = "https://www.wikipedia.org/"
+    # url = "https://dvmn.org/modules/"
+    # url = "https://www.google.ru/"
+    # # url = "https://spinit.dev/"
+    url = "https://www.wikipedia.org/"
 
     main_url = get_main_url(url)
     links, dirt_links = scan_page(url)
-
-    # write_report(main_url, list(dirt_links), temp=True)
-    write_report(main_url, list(links), temp=True)
-
-
-
-
+    write_report(url, list(links), "a")
+    write_report(url, dirt_links, "dirt")
