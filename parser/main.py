@@ -187,9 +187,9 @@ def run_for_pages(first_url: str):
                 print("\nreached pages limit.")
                 break
 
-            # if time() - func_time > 5:
-            #     print("\nreached time limit.")
-            #     break
+            if time() - func_time > 5:
+                print("\nreached time limit.")
+                break
 
         times.append(time() - scan_time)
 
