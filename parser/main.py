@@ -236,7 +236,7 @@ if __name__ == "__main__":
     # scanned, found = run_for_pages(url)
     # write_report(url, len(scanned), found, "pre_")
 
-    links, dirt_links, = scan_page(url)
+    links, dirt_links = scan_page(url)
     write_report(url, 1, links)
     # write_report(url, 1, links, "a")
     # write_report(url, 1, dirt_links, "dirt")
