@@ -87,6 +87,10 @@ def process_link(main_url: str, link: str):
         link = protocol + link[2:]
     elif not (link.startswith("https://") or link.startswith("http://")):
         return None
+    elif not link.startswith(main_url):
+        pattern_position = link.find(pattern)
+        if link[pattern_position - 1] != ".":
+            return None
 
     if "&" in link:
         link = link[:link.find("&")]
@@ -105,7 +109,7 @@ def process_link(main_url: str, link: str):
     return link
 
 
-def search_for_hrefs(main_url, page: str):
+def search_for_hrefs(main_url: str, page: str):
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
     clean_links = []
@@ -118,7 +122,7 @@ def search_for_hrefs(main_url, page: str):
 
     dirt_links = [link['href'] for link in links]
 
-    return sorted(set(clean_links)), dirt_links
+    return set(clean_links), dirt_links
 
 
 def scan_page(url: str):
@@ -139,60 +143,56 @@ def form_report(url: str, scanned_pages: int, found_pages: int, pages: list):
 
 
 def write_report(url: str, scanned: int, links: list, postfix=""):
-    # scanned_pages = 1
-
     main_domain = get_main_domain(url)
+
     if not postfix:
         file_name = "samples/" + main_domain + ".json"
     else:
         file_name = "temp/_" + main_domain + "_" + postfix + ".json"
 
     with open(file_name, "w") as file:
-        # Стоит получше продумать структуру
         report = form_report(url, scanned, len(links), links),
         json.dump(report, file, indent=4)
 
 
 def run_for_pages(first_url: str):
     pages_to_scan = deque()
-    pages_scanned = set()
-    pages_found = set()
-    times = []
-
-    func_time = time()
-
     pages_to_scan.append(first_url)
 
+    pages_scanned = set()
+    pages_found = set()
+
+    times = []
+    func_time = time()
     counter = 1
 
     while pages_to_scan:
-
         url = pages_to_scan.popleft()
 
         if url in pages_scanned:
             continue
 
         scan_time = time()
-
         links, _ = scan_page(url)
         pages_found.update(links)
         pages_scanned.add(url)
-        unique_links = set(links) - pages_scanned
+        unique_links = set(links) - pages_scanned - set(pages_to_scan)
         pages_to_scan.extend(unique_links)
 
         if counter % 10 == 0:
             print(f"{counter}, pages to scan left: {len(pages_to_scan)}")
 
-            if len(pages_scanned) > 500:
-                print("\nreached pages limit.")
-                break
-
-            if time() - func_time > 5:
+            """
+            if time() - func_time > 10:
                 print("\nreached time limit.")
                 break
+            """
+
+        if len(pages_scanned) > 50:
+            print("\nreached pages limit.")
+            break
 
         times.append(time() - scan_time)
-
         counter += 1
 
     print(f"\ndone by {time() - func_time:.2f} secs.\n")
@@ -218,25 +218,7 @@ if __name__ == "__main__":
         "http://www.avosetrov.ru/",
     ]
 
-    url = "https://vk.com"
+    url = urls[2]
 
-    #
-    # times = []
-    #
-    # for url in dvmn_urls:
-    #     request_time = time()
-    #     request_for_page(url)
-    #     times.append(round(time() - request_time, 2))
-    #
-    # print(f"mean time per request: {mean(times):.2f}")
-    # print(f"max time per request: {max(times):.2f}")
-    # print(f"min time per request: {min(times):.2f}")
-    # print(times)
-
-    # scanned, found = run_for_pages(url)
-    # write_report(url, len(scanned), found, "pre_")
-
-    links, dirt_links = scan_page(url)
-    write_report(url, 1, links)
-    # write_report(url, 1, links, "a")
-    # write_report(url, 1, dirt_links, "dirt")
+    scanned, found = run_for_pages(url)
+    write_report(url, len(scanned), found, "sync")
