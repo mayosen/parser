@@ -11,18 +11,18 @@ async def request_and_scan_page(session: aiohttp.ClientSession, url: str):
     headers = {
         "User-Agent": choice(USER_AGENTS)
     }
+
     async with session.get(url, headers=headers) as response:
+        print("scanning:", url)
         try:
             response.raise_for_status()
         except (HTTPForbidden, HTTPTooManyRequests):
             await asyncio.sleep(10)
-
-        print("scanning:", url)
         page = await response.text()
 
     main_url = get_main_url(url)
     clean_links, _ = search_for_hrefs(main_url, page)
-    return list(set(clean_links))
+    return set(clean_links)
 
 
 async def run_for_pages(first_url: str):
