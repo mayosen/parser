@@ -1,10 +1,7 @@
 import asyncio
 import aiohttp
-import requests
-
-from main import scan_page, search_for_hrefs, get_main_url
 from time import time
-from statistics import mean
+from main import search_for_hrefs, get_main_url
 
 
 links_to_test = [
@@ -21,28 +18,6 @@ links_to_test = [
     "https://dvmn.org/encyclopedia/async_python/split_corutine/",
     "https://dvmn.org/encyclopedia/async_python/why_async/",
 ]
-
-
-def timeit(func):
-    def wrapper(*args, **kwargs):
-        start = time()
-        res = func(*args, **kwargs)
-        elapsed = time() - start
-        print(elapsed)
-        return res
-    return wrapper
-
-
-@timeit
-def test_sync():
-    links = []
-
-    for url in links_to_test:
-        page = requests.get(url).text
-        # links_on_page, _ = scan_page(url)
-        # links.extend(links_on_page)
-
-    return links
 
 
 async def run_for_pages():
@@ -62,12 +37,11 @@ async def run_for_pages():
 
 
 if __name__ == "__main__":
-    # test_sync()
-
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    start = time()
-    links = asyncio.run(run_for_pages())
-    print(time() - start)
-    print(links)
 
+    start = time()
+
+    links = asyncio.run(run_for_pages())
+
+    print(time() - start)
 
