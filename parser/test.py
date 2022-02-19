@@ -3,6 +3,10 @@ from os import listdir
 from main import scan_page, write_report
 
 
+class BrokenScanPage(Exception):
+    pass
+
+
 def read_sample(filename: str):
     # Пока только для 1 сканированной страницы.
 
@@ -26,10 +30,6 @@ def read_all_samples():
     return samples
 
 
-class BrokenScanPage(Exception):
-    pass
-
-
 def test_parser(samples: list):
     print("started testing.")
 
@@ -37,8 +37,8 @@ def test_parser(samples: list):
         url = item["url"]
         links, dirt_links = scan_page(url)
         if len(links) != item["found_pages"]:
-            write_report(url, links, "t_clean")
-            write_report(url, dirt_links, "t_dirt")
+            write_report(url, 1, links, "t_clean")
+            write_report(url, 1, dirt_links, "t_dirt")
             raise BrokenScanPage(
                 f"url: {url} expected: {item['found_pages']} vs scanned: {len(links)}")
     else:
