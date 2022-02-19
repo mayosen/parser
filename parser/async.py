@@ -1,9 +1,12 @@
 import asyncio
 import aiohttp
+from aiohttp.web_exceptions import HTTPForbidden, HTTPTooManyRequests
 from time import time
 from statistics import mean
 from random import choice
 from main import search_for_hrefs, get_main_url, write_report, USER_AGENTS
+
+
 
 
 async def request_and_scan_page(session: aiohttp.ClientSession, url: str):
@@ -11,7 +14,11 @@ async def request_and_scan_page(session: aiohttp.ClientSession, url: str):
         "User-Agent": choice(USER_AGENTS)
     }
     async with session.get(url, headers=headers) as response:
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except (HTTPForbidden, HTTPTooManyRequests):
+            await asyncio.sleep(10)
+
         print("scanning:", url)
         page = await response.text()
 
