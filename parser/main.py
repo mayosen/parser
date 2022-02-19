@@ -122,9 +122,9 @@ def search_for_hrefs(main_url, page: str):
 
 
 def scan_page(url: str):
-    main_url = get_main_url(url)
     print("scanning:", url)
     page = request_for_page(url)
+    main_url = get_main_url(url)
     clean_links, dirt_links = search_for_hrefs(main_url, page)
     return clean_links, dirt_links
 
