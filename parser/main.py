@@ -179,17 +179,22 @@ def run_for_pages(first_url: str):
         unique_links = set(links) - pages_scanned - set(pages_to_scan)
         pages_to_scan.extend(unique_links)
 
+        """
         if counter % 10 == 0:
             print(f"{counter}, pages to scan left: {len(pages_to_scan)}")
 
-            """
+            
             if time() - func_time > 10:
                 print("\nreached time limit.")
                 break
-            """
-
-        if len(pages_scanned) > 50:
+            
+        if len(pages_found) > 500:
             print("\nreached pages limit.")
+            break
+        """
+
+        if time() - func_time > 30:
+            print("\nreached time limit.")
             break
 
         times.append(time() - scan_time)
@@ -218,7 +223,7 @@ if __name__ == "__main__":
         "http://www.avosetrov.ru/",
     ]
 
-    url = urls[2]
+    url = "https://www.ratatype.com/"
 
     scanned, found = run_for_pages(url)
     write_report(url, len(scanned), found, "sync")

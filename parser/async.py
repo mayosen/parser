@@ -7,8 +7,6 @@ from random import choice
 from main import search_for_hrefs, get_main_url, write_report, USER_AGENTS
 
 
-
-
 async def request_and_scan_page(session: aiohttp.ClientSession, url: str):
     headers = {
         "User-Agent": choice(USER_AGENTS)
@@ -57,11 +55,17 @@ async def run_for_pages(first_url: str):
             times.append(time() - scan_time)
             pages_to_scan.task_done()
 
+            """
             if len(pages_scanned) % 10 == 0:
                 print(f"scanned: {len(pages_scanned)}, left to scan: {pages_to_scan.qsize()}")
-
+            
             if len(pages_found) > 500:
                 print("\nreached pages limit.")
+                break
+            """
+
+            if time() - func_time > 30:
+                print("\nreached time limit.")
                 break
 
     print(f"\ndone by {time() - func_time:.2f} secs.\n")
@@ -77,8 +81,7 @@ async def run_for_pages(first_url: str):
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    url = "https://gljewelry.com/about/"
-    url = "https://www.google.com/"
+    url = "https://www.ratatype.com/"
 
     scanned, found = asyncio.run(run_for_pages(url))
     write_report(url, len(scanned), found, "async")
