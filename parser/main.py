@@ -1,10 +1,10 @@
 import requests
 import json
-from random import choice
-from bs4 import BeautifulSoup
-from collections import deque
 from time import time
+from random import choice
+from collections import deque
 from statistics import mean
+from bs4 import BeautifulSoup
 
 
 USER_AGENTS = [
@@ -231,7 +231,9 @@ def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
         print(f"max time per page: {max(times):.2f}")
         print(f"min time per page: {min(times):.2f}")
 
-    return pages_scanned, sorted(pages_found)
+        times.append(time() - func_time)
+
+    return times, pages_scanned, sorted(pages_found)
 
 
 def build_tree(init_links: list):
@@ -310,7 +312,7 @@ if __name__ == "__main__":
     # # links, _ = scan_page(url, 1)
     # # write_report(url, 1, sorted(links), "limit_2")
     #
-    # scanned, found = run_for_pages(
+    # _, scanned, found = run_for_pages(
     #     url, nesting_limit=0, subdomains=True,
     #     time_limit=5, scanned_limit=0, found_limit=0)
     # write_report(url, len(scanned), found, "sync")

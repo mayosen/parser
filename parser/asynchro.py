@@ -75,7 +75,9 @@ async def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
         print(f"max time per page: {max(times):.2f}")
         print(f"min time per page: {min(times):.2f}")
 
-    return pages_scanned, sorted(pages_found)
+        times.append(time() - func_time)
+
+    return times, pages_scanned, sorted(pages_found)
 
 
 if __name__ == "__main__":
@@ -83,7 +85,7 @@ if __name__ == "__main__":
 
     url = "https://google.com/"
 
-    scanned, found = asyncio.run(
+    _, scanned, found = asyncio.run(
         run_for_pages(
             url, subdomains=True, nesting_limit=3,
             time_limit=0, scanned_limit=15, found_limit=0)
