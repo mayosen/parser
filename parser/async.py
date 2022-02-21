@@ -36,7 +36,10 @@ async def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
     async with aiohttp.ClientSession() as session:
         while not pages_to_scan.empty():
             scan_time = time()
+
             url = await pages_to_scan.get()
+            # url = pages_to_scan.get_nowait()
+            # Альтернативный способ. Разницы в скорости не замечено
 
             if url in pages_scanned:
                 pages_to_scan.task_done()
@@ -53,12 +56,6 @@ async def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
 
             times.append(time() - scan_time)
             pages_to_scan.task_done()
-
-            """
-            if len(pages_scanned) % 10 == 0:
-                print(f"scanned: {len(pages_scanned)}, "
-                      f"left to scan: {pages_to_scan.qsize()}")
-            """
 
             if time_limit and time() - func_time >= time_limit:
                 print("\nreached time limit.")
@@ -89,6 +86,6 @@ if __name__ == "__main__":
     scanned, found = asyncio.run(
         run_for_pages(
             url, subdomains=True, nesting_limit=3,
-            time_limit=5, scanned_limit=0, found_limit=0)
+            time_limit=0, scanned_limit=15, found_limit=0)
     )
     write_report(url, len(scanned), found, "async")
