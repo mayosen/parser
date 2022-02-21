@@ -1,31 +1,27 @@
 import asyncio
 import aiohttp
-from aiohttp.web_exceptions import HTTPForbidden, HTTPTooManyRequests
 from time import time
 from statistics import mean
 from random import choice
 from main import search_for_hrefs, get_main_url, write_report, USER_AGENTS
 
 
-async def request_and_scan_page(session: aiohttp.ClientSession, url: str):
+async def request_and_scan_page(session: aiohttp.ClientSession,
+                                url: str, nesting_limit=0):
     headers = {
         "User-Agent": choice(USER_AGENTS)
     }
 
     async with session.get(url, headers=headers) as response:
         print("scanning:", url)
-        try:
-            response.raise_for_status()
-        except (HTTPForbidden, HTTPTooManyRequests):
-            await asyncio.sleep(10)
         page = await response.text()
 
     main_url = get_main_url(url)
-    clean_links, _ = search_for_hrefs(main_url, page)
+    clean_links, _ = search_for_hrefs(main_url, page, nesting_limit)
     return set(clean_links)
 
 
-async def run_for_pages(first_url: str):
+async def run_for_pages(first_url: str, nesting_limit=0):
     pages_to_scan = asyncio.Queue()
     pages_to_scan.put_nowait(first_url)
 
@@ -44,7 +40,7 @@ async def run_for_pages(first_url: str):
                 pages_to_scan.task_done()
                 continue
 
-            links = await request_and_scan_page(session, url)
+            links = await request_and_scan_page(session, url, nesting_limit)
 
             pages_found.update(links)
             pages_scanned.add(url)
@@ -64,7 +60,7 @@ async def run_for_pages(first_url: str):
                 break
             """
 
-            if time() - func_time > 30:
+            if time() - func_time > 10:
                 print("\nreached time limit.")
                 break
 
@@ -81,7 +77,7 @@ async def run_for_pages(first_url: str):
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    url = "https://www.ratatype.com/"
+    url = "https://www.google.com/"
 
-    scanned, found = asyncio.run(run_for_pages(url))
+    scanned, found = asyncio.run(run_for_pages(url, 2))
     write_report(url, len(scanned), found, "async")

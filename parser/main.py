@@ -66,7 +66,7 @@ def is_other_site(url: str):
     return other
 
 
-def process_link(main_url: str, link: str):
+def process_link(main_url: str, link: str, nesting_limit=0):
     if "?" in link:
         link = link[:link.find("?")]
 
@@ -106,16 +106,28 @@ def process_link(main_url: str, link: str):
     if link == main_url:
         link += "/"
 
+    if nesting_limit:
+        clean_link = link[link.find("/") + 2:]
+        dots = clean_link[:clean_link.rfind("/") + 1].count(".") - 1
+        slashes = clean_link.count("/")
+        if not link[link.rfind("/") + 1:]:
+            slashes -= 1
+
+        nesting = dots + slashes
+
+        if nesting > nesting_limit:
+            return None
+
     return link
 
 
-def search_for_hrefs(main_url: str, page: str):
+def search_for_hrefs(main_url: str, page: str, nesting_limit=0):
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
     clean_links = []
 
     for link in links:
-        processed_link = process_link(main_url, link['href'])
+        processed_link = process_link(main_url, link['href'], nesting_limit)
 
         if processed_link:
             clean_links.append(processed_link)
@@ -125,11 +137,11 @@ def search_for_hrefs(main_url: str, page: str):
     return set(clean_links), dirt_links
 
 
-def scan_page(url: str):
+def scan_page(url: str, nesting_limit=0):
     print("scanning:", url)
     page = request_for_page(url)
     main_url = get_main_url(url)
-    clean_links, dirt_links = search_for_hrefs(main_url, page)
+    clean_links, dirt_links = search_for_hrefs(main_url, page, nesting_limit)
     return clean_links, dirt_links
 
 
@@ -155,7 +167,7 @@ def write_report(url: str, scanned: int, links: list, postfix=""):
         json.dump(report, file, indent=4)
 
 
-def run_for_pages(first_url: str):
+def run_for_pages(first_url: str, nesting_limit=0):
     pages_to_scan = deque()
     pages_to_scan.append(first_url)
 
@@ -173,7 +185,7 @@ def run_for_pages(first_url: str):
             continue
 
         scan_time = time()
-        links, _ = scan_page(url)
+        links, _ = scan_page(url, nesting_limit)
         pages_found.update(links)
         pages_scanned.add(url)
         unique_links = set(links) - pages_scanned - set(pages_to_scan)
