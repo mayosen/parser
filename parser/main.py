@@ -183,7 +183,8 @@ def write_report(url: str, scanned: int, links: list, postfix=""):
         json.dump(report, file, indent=4)
 
 
-def run_for_pages(first_url: str, nesting_limit=0, subdomains=True):
+def run_for_pages(first_url: str, nesting_limit=0, subdomains=True,
+                  time_limit=0, scanned_limit=0, found_limit=0):
     pages_to_scan = deque()
     pages_to_scan.append(first_url)
 
@@ -210,34 +211,28 @@ def run_for_pages(first_url: str, nesting_limit=0, subdomains=True):
         """
         if counter % 10 == 0:
             print(f"{counter}, pages to scan left: {len(pages_to_scan)}")
-
-            
-            if time() - func_time > 10:
-                print("\nreached time limit.")
-                break
-            
-        if len(pages_found) > 500:
-            print("\nreached pages limit.")
-            break
         """
-
-        if len(pages_found) > 50:
-            print("\nreached pages limit.")
-            break
-
-        if time() - func_time > 30:
-            print("\nreached time limit.")
-            break
 
         times.append(time() - scan_time)
         counter += 1
 
-    print(f"\ndone by {time() - func_time:.2f} secs.\n")
-    print(f"scanned: {len(pages_scanned)}")
-    print(f"found: {len(pages_found)}\n")
-    print(f"mean time per page: {mean(times):.2f}")
-    print(f"max time per page: {max(times):.2f}")
-    print(f"min time per page: {min(times):.2f}")
+        if time_limit and time() - func_time >= time_limit:
+            print("\nreached time limit.")
+            break
+        elif scanned_limit and len(pages_scanned) >= scanned_limit:
+            print("\nreached scanned pages limit.")
+            break
+        elif found_limit and len(pages_found) >= found_limit:
+            print("\nreached found pages limit.")
+            break
+
+    if times:
+        print(f"\ndone by {time() - func_time:.2f} secs.\n")
+        print(f"scanned: {len(pages_scanned)}")
+        print(f"found: {len(pages_found)}\n")
+        print(f"mean time per page: {mean(times):.2f}")
+        print(f"max time per page: {max(times):.2f}")
+        print(f"min time per page: {min(times):.2f}")
 
     return pages_scanned, sorted(pages_found)
 
@@ -262,5 +257,7 @@ if __name__ == "__main__":
     # links, _ = scan_page(url, 1)
     # write_report(url, 1, sorted(links), "limit_2")
 
-    scanned, found = run_for_pages(url, nesting_limit=0, subdomains=True)
+    scanned, found = run_for_pages(
+        url, nesting_limit=0, subdomains=True,
+        time_limit=5, scanned_limit=0, found_limit=0)
     write_report(url, len(scanned), found, "sync")

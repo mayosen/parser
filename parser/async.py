@@ -21,7 +21,8 @@ async def request_and_scan_page(session: aiohttp.ClientSession,
     return set(clean_links)
 
 
-async def run_for_pages(first_url: str, nesting_limit=0, subdomains=True):
+async def run_for_pages(first_url: str, nesting_limit=0, subdomains=True,
+                        time_limit=0, scanned_limit=0, found_limit=0):
     pages_to_scan = asyncio.Queue()
     pages_to_scan.put_nowait(first_url)
 
@@ -54,23 +55,27 @@ async def run_for_pages(first_url: str, nesting_limit=0, subdomains=True):
 
             """
             if len(pages_scanned) % 10 == 0:
-                print(f"scanned: {len(pages_scanned)}, left to scan: {pages_to_scan.qsize()}")
-            
-            if len(pages_found) > 500:
-                print("\nreached pages limit.")
-                break
+                print(f"scanned: {len(pages_scanned)}, "
+                      f"left to scan: {pages_to_scan.qsize()}")
             """
 
-            if time() - func_time > 10:
+            if time_limit and time() - func_time >= time_limit:
                 print("\nreached time limit.")
                 break
+            elif scanned_limit and len(pages_scanned) >= scanned_limit:
+                print("\nreached scanned pages limit.")
+                break
+            elif found_limit and len(pages_found) >= found_limit:
+                print("\nreached found pages limit.")
+                break
 
-    print(f"\ndone by {time() - func_time:.2f} secs.\n")
-    print(f"scanned: {len(pages_scanned)}")
-    print(f"found: {len(pages_found)}\n")
-    print(f"mean time per page: {mean(times):.2f}")
-    print(f"max time per page: {max(times):.2f}")
-    print(f"min time per page: {min(times):.2f}")
+    if times:
+        print(f"\ndone by {time() - func_time:.2f} secs.\n")
+        print(f"scanned: {len(pages_scanned)}")
+        print(f"found: {len(pages_found)}\n")
+        print(f"mean time per page: {mean(times):.2f}")
+        print(f"max time per page: {max(times):.2f}")
+        print(f"min time per page: {min(times):.2f}")
 
     return pages_scanned, sorted(pages_found)
 
@@ -78,7 +83,11 @@ async def run_for_pages(first_url: str, nesting_limit=0, subdomains=True):
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    url = "https://www.google.com/"
+    url = "https://www.ratatype.com/"
 
-    scanned, found = asyncio.run(run_for_pages(url, 2))
-    write_report(url, len(scanned), found, "async")
+    scanned, found = asyncio.run(
+        run_for_pages(
+            url, nesting_limit=0, subdomains=True,
+            time_limit=5, scanned_limit=0, found_limit=0)
+    )
+    write_report(url, len(scanned), found, "async2")
