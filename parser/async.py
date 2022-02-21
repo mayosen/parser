@@ -14,6 +14,7 @@ async def request_and_scan_page(session: aiohttp.ClientSession,
 
     async with session.get(url, headers=headers) as response:
         print("scanning:", url)
+        response.raise_for_status()
         page = await response.text()
 
     main_url = get_main_url(url)
