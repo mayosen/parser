@@ -7,7 +7,7 @@ from main import search_for_hrefs, get_main_url, write_report, USER_AGENTS
 
 
 async def request_and_scan_page(session: aiohttp.ClientSession,
-                                url: str, nesting_limit=0):
+                                url: str, nesting_limit=0, subdomains=True):
     headers = {
         "User-Agent": choice(USER_AGENTS)
     }
@@ -17,11 +17,11 @@ async def request_and_scan_page(session: aiohttp.ClientSession,
         page = await response.text()
 
     main_url = get_main_url(url)
-    clean_links, _ = search_for_hrefs(main_url, page, nesting_limit)
+    clean_links, _ = search_for_hrefs(main_url, page, nesting_limit, subdomains)
     return set(clean_links)
 
 
-async def run_for_pages(first_url: str, nesting_limit=0):
+async def run_for_pages(first_url: str, nesting_limit=0, subdomains=True):
     pages_to_scan = asyncio.Queue()
     pages_to_scan.put_nowait(first_url)
 
@@ -40,7 +40,8 @@ async def run_for_pages(first_url: str, nesting_limit=0):
                 pages_to_scan.task_done()
                 continue
 
-            links = await request_and_scan_page(session, url, nesting_limit)
+            links = await request_and_scan_page(
+                session, url, nesting_limit, subdomains)
 
             pages_found.update(links)
             pages_scanned.add(url)
