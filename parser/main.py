@@ -66,6 +66,28 @@ def is_other_site(url: str):
     return other
 
 
+def form_report(url: str, scanned_pages: int, found_pages: int, pages: list):
+    return {
+        "url": url,
+        "scanned_pages": scanned_pages,
+        "found_pages": found_pages,
+        "pages": pages
+    }
+
+
+def write_report(url: str, scanned: int, links: list, postfix=""):
+    main_domain = get_main_domain(url)
+
+    if not postfix:
+        file_name = "samples/" + main_domain + ".json"
+    else:
+        file_name = "temp/_" + main_domain + "_" + postfix + ".json"
+
+    with open(file_name, "w") as file:
+        report = form_report(url, scanned, len(links), links),
+        json.dump(report, file, indent=4)
+
+
 def has_subdomains(link: str):
     clean_link = link[link.find("/") + 2:]
     subdomains = clean_link[:clean_link.find("/")].count(".") - 1
@@ -82,11 +104,15 @@ def count_nesting(link: str):
     return dots + slashes
 
 
+def get_pattern(main_url: str):
+    return get_main_domain(main_url) + main_url[main_url.rfind("."):]
+
+
 def process_link(main_url: str, link: str, subdomains=True, nesting_limit=0):
     if "?" in link:
         link = link[:link.find("?")]
 
-    pattern = get_main_domain(main_url) + main_url[main_url.rfind("."):]
+    pattern = get_pattern(main_url)
 
     if pattern not in link:
         if link.startswith("/") or link.startswith("#"):
@@ -161,28 +187,6 @@ def scan_page(url: str, subdomains=True, nesting_limit=0):
     return clean_links, dirt_links
 
 
-def form_report(url: str, scanned_pages: int, found_pages: int, pages: list):
-    return {
-        "url": url,
-        "scanned_pages": scanned_pages,
-        "found_pages": found_pages,
-        "pages": pages
-    }
-
-
-def write_report(url: str, scanned: int, links: list, postfix=""):
-    main_domain = get_main_domain(url)
-
-    if not postfix:
-        file_name = "samples/" + main_domain + ".json"
-    else:
-        file_name = "temp/_" + main_domain + "_" + postfix + ".json"
-
-    with open(file_name, "w") as file:
-        report = form_report(url, scanned, len(links), links),
-        json.dump(report, file, indent=4)
-
-
 def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
                   time_limit=0, scanned_limit=0, found_limit=0):
     pages_to_scan = deque()
@@ -193,7 +197,6 @@ def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
 
     times = []
     func_time = time()
-    counter = 1
 
     while pages_to_scan:
         url = pages_to_scan.popleft()
@@ -208,13 +211,7 @@ def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
         unique_links = set(links) - pages_scanned - set(pages_to_scan)
         pages_to_scan.extend(unique_links)
 
-        """
-        if counter % 10 == 0:
-            print(f"{counter}, pages to scan left: {len(pages_to_scan)}")
-        """
-
         times.append(time() - scan_time)
-        counter += 1
 
         if time_limit and time() - func_time >= time_limit:
             print("\nreached time limit.")
@@ -237,6 +234,62 @@ def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
     return pages_scanned, sorted(pages_found)
 
 
+def build_tree(init_links: list):
+    # Сами links у меня остаются
+    # Если понадобится, смогу их вернуть
+
+    links = []
+
+    for link in init_links:
+        links.append(link[link.find("//") + 2:].rstrip("/"))
+
+    main_url = str(min(links, key=len))
+    links.remove(main_url)
+    pattern = get_pattern(main_url)
+
+    sequences = []
+
+    for link in links:
+        if "/" in link:
+            domains = link.split("/", maxsplit=1)
+            dots = domains[0].split(".")[:-2][::-1]
+            slashed = domains[1].split("/")
+            items = dots + slashed
+        else:
+            items = link.split(".")[:-1][::-1]
+
+        sequences.append(items)
+
+    def nest_dict(seq: list):
+        if len(seq) == 1:
+            return seq[0]
+
+        element = seq.pop()
+
+        return {
+            element:
+                nest_dict(seq)
+        }
+
+    tree = {
+        pattern: {}
+    }
+
+    for item in sequences:
+        temp = nest_dict(item)
+        print(temp)
+
+    print(tree)
+
+    return tree
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
     urls = [
         "https://edu.avosetrov.ru/",
@@ -252,12 +305,28 @@ if __name__ == "__main__":
         "https://www.ratatype.com/",
     ]
 
-    url = urls[-1]
+    # url = urls[-1]
+    #
+    # # links, _ = scan_page(url, 1)
+    # # write_report(url, 1, sorted(links), "limit_2")
+    #
+    # scanned, found = run_for_pages(
+    #     url, nesting_limit=0, subdomains=True,
+    #     time_limit=5, scanned_limit=0, found_limit=0)
+    # write_report(url, len(scanned), found, "sync")
 
-    # links, _ = scan_page(url, 1)
-    # write_report(url, 1, sorted(links), "limit_2")
+    links = [
+        "https://www.google.ru/",
+        "https://www.google.ru/advanced_search",
+        "https://www.google.ru/history/optout",
+        "https://www.google.ru/history/privacyadvisor/search/unauth",
+        "https://www.google.ru/imghp",
+        "https://www.google.ru/intl/ru/about/products",
+        "https://www.google.ru/intl/ru_ru/ads/",
+        "https://www.google.ru/preferences",
+        "https://www.google.ru/services/"
+    ]
 
-    scanned, found = run_for_pages(
-        url, nesting_limit=0, subdomains=True,
-        time_limit=5, scanned_limit=0, found_limit=0)
-    write_report(url, len(scanned), found, "sync")
+    tree = build_tree(links)
+    write_report("nest.ing", 0, tree, "ing")
+
