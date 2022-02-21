@@ -66,7 +66,23 @@ def is_other_site(url: str):
     return other
 
 
-def process_link(main_url: str, link: str, nesting_limit=0):
+def has_subdomains(link: str):
+    clean_link = link[link.find("/") + 2:]
+    subdomains = clean_link[:clean_link.find("/")].count(".") - 1
+    return subdomains > 0
+
+
+def count_nesting(link: str):
+    clean_link = link[link.find("/") + 2:]
+    dots = clean_link[:clean_link.rfind("/") + 1].count(".") - 1
+    slashes = clean_link.count("/")
+    if not link[link.rfind("/") + 1:]:
+        slashes -= 1
+
+    return dots + slashes
+
+
+def process_link(main_url: str, link: str, nesting_limit=0, subdomains=True):
     if "?" in link:
         link = link[:link.find("?")]
 
@@ -106,42 +122,39 @@ def process_link(main_url: str, link: str, nesting_limit=0):
     if link == main_url:
         link += "/"
 
-    if nesting_limit:
-        clean_link = link[link.find("/") + 2:]
-        dots = clean_link[:clean_link.rfind("/") + 1].count(".") - 1
-        slashes = clean_link.count("/")
-        if not link[link.rfind("/") + 1:]:
-            slashes -= 1
+    if not subdomains and has_subdomains(link):
+        return None
 
-        nesting = dots + slashes
-
-        if nesting > nesting_limit:
-            return None
+    if nesting_limit and count_nesting(link) > nesting_limit:
+        return None
 
     return link
 
 
-def search_for_hrefs(main_url: str, page: str, nesting_limit=0):
+def search_for_hrefs(
+        main_url: str, page: str, nesting_limit=0, subdomains=True):
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
     clean_links = []
 
     for link in links:
-        processed_link = process_link(main_url, link['href'], nesting_limit)
+        processed_link = process_link(
+            main_url, link['href'], nesting_limit, subdomains)
 
         if processed_link:
             clean_links.append(processed_link)
 
     dirt_links = [link['href'] for link in links]
 
-    return set(clean_links), dirt_links
+    return set(clean_links), set(dirt_links)
 
 
-def scan_page(url: str, nesting_limit=0):
+def scan_page(url: str, nesting_limit=0, subdomains=True):
     print("scanning:", url)
     page = request_for_page(url)
     main_url = get_main_url(url)
-    clean_links, dirt_links = search_for_hrefs(main_url, page, nesting_limit)
+    clean_links, dirt_links = search_for_hrefs(
+        main_url, page, nesting_limit, subdomains)
     return clean_links, dirt_links
 
 
@@ -167,7 +180,7 @@ def write_report(url: str, scanned: int, links: list, postfix=""):
         json.dump(report, file, indent=4)
 
 
-def run_for_pages(first_url: str, nesting_limit=0):
+def run_for_pages(first_url: str, nesting_limit=0, subdomains=True):
     pages_to_scan = deque()
     pages_to_scan.append(first_url)
 
@@ -185,7 +198,7 @@ def run_for_pages(first_url: str, nesting_limit=0):
             continue
 
         scan_time = time()
-        links, _ = scan_page(url, nesting_limit)
+        links, _ = scan_page(url, nesting_limit, subdomains)
         pages_found.update(links)
         pages_scanned.add(url)
         unique_links = set(links) - pages_scanned - set(pages_to_scan)
@@ -204,6 +217,10 @@ def run_for_pages(first_url: str, nesting_limit=0):
             print("\nreached pages limit.")
             break
         """
+
+        if len(pages_found) > 50:
+            print("\nreached pages limit.")
+            break
 
         if time() - func_time > 30:
             print("\nreached time limit.")
@@ -225,17 +242,22 @@ def run_for_pages(first_url: str, nesting_limit=0):
 if __name__ == "__main__":
     urls = [
         "https://edu.avosetrov.ru/",
+        "http://www.avosetrov.ru/",
         "https://dvmn.org/modules/",
         "https://gljewelry.com/about/",
         "https://www.google.ru/",
+        "https://www.google.com/",
         "https://spinit.dev/",
         "https://vk.com/",
         "https://www.wikipedia.org/",
         "https://www.coursera.org/",
-        "http://www.avosetrov.ru/",
+        "https://www.ratatype.com/",
     ]
 
-    url = "https://www.ratatype.com/"
+    url = urls[-1]
 
-    scanned, found = run_for_pages(url)
+    # links, _ = scan_page(url, 1)
+    # write_report(url, 1, sorted(links), "limit_2")
+
+    scanned, found = run_for_pages(url, nesting_limit=0, subdomains=True)
     write_report(url, len(scanned), found, "sync")
