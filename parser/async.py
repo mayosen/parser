@@ -1,31 +1,29 @@
 import asyncio
 import aiohttp
-from aiohttp.web_exceptions import HTTPForbidden, HTTPTooManyRequests
 from time import time
 from statistics import mean
 from random import choice
 from main import search_for_hrefs, get_main_url, write_report, USER_AGENTS
 
 
-async def request_and_scan_page(session: aiohttp.ClientSession, url: str):
+async def request_and_scan_page(session: aiohttp.ClientSession,
+                                url: str, subdomains=True, nesting_limit=0):
     headers = {
         "User-Agent": choice(USER_AGENTS)
     }
 
     async with session.get(url, headers=headers) as response:
         print("scanning:", url)
-        try:
-            response.raise_for_status()
-        except (HTTPForbidden, HTTPTooManyRequests):
-            await asyncio.sleep(10)
+        response.raise_for_status()
         page = await response.text()
 
     main_url = get_main_url(url)
-    clean_links, _ = search_for_hrefs(main_url, page)
+    clean_links, _ = search_for_hrefs(main_url, page, subdomains, nesting_limit)
     return set(clean_links)
 
 
-async def run_for_pages(first_url: str):
+async def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
+                        time_limit=0, scanned_limit=0, found_limit=0):
     pages_to_scan = asyncio.Queue()
     pages_to_scan.put_nowait(first_url)
 
@@ -44,7 +42,8 @@ async def run_for_pages(first_url: str):
                 pages_to_scan.task_done()
                 continue
 
-            links = await request_and_scan_page(session, url)
+            links = await request_and_scan_page(
+                session, url, subdomains, nesting_limit)
 
             pages_found.update(links)
             pages_scanned.add(url)
@@ -57,23 +56,27 @@ async def run_for_pages(first_url: str):
 
             """
             if len(pages_scanned) % 10 == 0:
-                print(f"scanned: {len(pages_scanned)}, left to scan: {pages_to_scan.qsize()}")
-            
-            if len(pages_found) > 500:
-                print("\nreached pages limit.")
-                break
+                print(f"scanned: {len(pages_scanned)}, "
+                      f"left to scan: {pages_to_scan.qsize()}")
             """
 
-            if time() - func_time > 30:
+            if time_limit and time() - func_time >= time_limit:
                 print("\nreached time limit.")
                 break
+            elif scanned_limit and len(pages_scanned) >= scanned_limit:
+                print("\nreached scanned pages limit.")
+                break
+            elif found_limit and len(pages_found) >= found_limit:
+                print("\nreached found pages limit.")
+                break
 
-    print(f"\ndone by {time() - func_time:.2f} secs.\n")
-    print(f"scanned: {len(pages_scanned)}")
-    print(f"found: {len(pages_found)}\n")
-    print(f"mean time per page: {mean(times):.2f}")
-    print(f"max time per page: {max(times):.2f}")
-    print(f"min time per page: {min(times):.2f}")
+    if times:
+        print(f"\ndone by {time() - func_time:.2f} secs.\n")
+        print(f"scanned: {len(pages_scanned)}")
+        print(f"found: {len(pages_found)}\n")
+        print(f"mean time per page: {mean(times):.2f}")
+        print(f"max time per page: {max(times):.2f}")
+        print(f"min time per page: {min(times):.2f}")
 
     return pages_scanned, sorted(pages_found)
 
@@ -81,7 +84,11 @@ async def run_for_pages(first_url: str):
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    url = "https://www.ratatype.com/"
+    url = "https://google.com/"
 
-    scanned, found = asyncio.run(run_for_pages(url))
+    scanned, found = asyncio.run(
+        run_for_pages(
+            url, subdomains=True, nesting_limit=3,
+            time_limit=5, scanned_limit=0, found_limit=0)
+    )
     write_report(url, len(scanned), found, "async")
