@@ -82,7 +82,7 @@ def count_nesting(link: str):
     return dots + slashes
 
 
-def process_link(main_url: str, link: str, nesting_limit=0, subdomains=True):
+def process_link(main_url: str, link: str, subdomains=True, nesting_limit=0):
     if "?" in link:
         link = link[:link.find("?")]
 
@@ -135,14 +135,14 @@ def process_link(main_url: str, link: str, nesting_limit=0, subdomains=True):
 
 
 def search_for_hrefs(
-        main_url: str, page: str, nesting_limit=0, subdomains=True):
+        main_url: str, page: str, subdomains=True, nesting_limit=0):
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
     clean_links = []
 
     for link in links:
         processed_link = process_link(
-            main_url, link['href'], nesting_limit, subdomains)
+            main_url, link['href'], subdomains, nesting_limit)
 
         if processed_link:
             clean_links.append(processed_link)
@@ -152,12 +152,12 @@ def search_for_hrefs(
     return set(clean_links), set(dirt_links)
 
 
-def scan_page(url: str, nesting_limit=0, subdomains=True):
+def scan_page(url: str, subdomains=True, nesting_limit=0):
     print("scanning:", url)
     page = request_for_page(url)
     main_url = get_main_url(url)
     clean_links, dirt_links = search_for_hrefs(
-        main_url, page, nesting_limit, subdomains)
+        main_url, page, subdomains, nesting_limit)
     return clean_links, dirt_links
 
 
@@ -183,7 +183,7 @@ def write_report(url: str, scanned: int, links: list, postfix=""):
         json.dump(report, file, indent=4)
 
 
-def run_for_pages(first_url: str, nesting_limit=0, subdomains=True,
+def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
                   time_limit=0, scanned_limit=0, found_limit=0):
     pages_to_scan = deque()
     pages_to_scan.append(first_url)
@@ -202,7 +202,7 @@ def run_for_pages(first_url: str, nesting_limit=0, subdomains=True,
             continue
 
         scan_time = time()
-        links, _ = scan_page(url, nesting_limit, subdomains)
+        links, _ = scan_page(url, subdomains, nesting_limit)
         pages_found.update(links)
         pages_scanned.add(url)
         unique_links = set(links) - pages_scanned - set(pages_to_scan)

@@ -7,7 +7,7 @@ from main import search_for_hrefs, get_main_url, write_report, USER_AGENTS
 
 
 async def request_and_scan_page(session: aiohttp.ClientSession,
-                                url: str, nesting_limit=0, subdomains=True):
+                                url: str, subdomains=True, nesting_limit=0):
     headers = {
         "User-Agent": choice(USER_AGENTS)
     }
@@ -21,7 +21,7 @@ async def request_and_scan_page(session: aiohttp.ClientSession,
     return set(clean_links)
 
 
-async def run_for_pages(first_url: str, nesting_limit=0, subdomains=True,
+async def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
                         time_limit=0, scanned_limit=0, found_limit=0):
     pages_to_scan = asyncio.Queue()
     pages_to_scan.put_nowait(first_url)
@@ -42,7 +42,7 @@ async def run_for_pages(first_url: str, nesting_limit=0, subdomains=True,
                 continue
 
             links = await request_and_scan_page(
-                session, url, nesting_limit, subdomains)
+                session, url, subdomains, nesting_limit)
 
             pages_found.update(links)
             pages_scanned.add(url)
@@ -83,11 +83,11 @@ async def run_for_pages(first_url: str, nesting_limit=0, subdomains=True,
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    url = "https://www.ratatype.com/"
+    url = "https://google.com/"
 
     scanned, found = asyncio.run(
         run_for_pages(
-            url, nesting_limit=0, subdomains=True,
+            url, subdomains=True, nesting_limit=3,
             time_limit=5, scanned_limit=0, found_limit=0)
     )
-    write_report(url, len(scanned), found, "async2")
+    write_report(url, len(scanned), found, "async")
