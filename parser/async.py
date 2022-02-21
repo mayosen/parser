@@ -17,7 +17,7 @@ async def request_and_scan_page(session: aiohttp.ClientSession,
         page = await response.text()
 
     main_url = get_main_url(url)
-    clean_links, _ = search_for_hrefs(main_url, page, nesting_limit, subdomains)
+    clean_links, _ = search_for_hrefs(main_url, page, subdomains, nesting_limit)
     return set(clean_links)
 
 
