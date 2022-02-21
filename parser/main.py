@@ -99,7 +99,10 @@ def process_link(main_url: str, link: str, nesting_limit=0, subdomains=True):
         else:
             return None
     elif link.startswith("//"):
-        protocol = main_url[:main_url.rfind("/") + 1]
+        if "." in link[link.find(pattern) + len(pattern):]:
+            return None
+
+        protocol = main_url[:main_url.find("/") + 2]
         link = protocol + link[2:]
     elif not (link.startswith("https://") or link.startswith("http://")):
         return None
