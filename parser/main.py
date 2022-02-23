@@ -1,3 +1,5 @@
+from pprint import pprint
+
 import requests
 import json
 from time import time
@@ -237,17 +239,10 @@ def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
 
 
 def build_tree(init_links: list):
-    # Сами links у меня остаются
-    # Если понадобится, смогу их вернуть
-
     links = []
 
     for link in init_links:
         links.append(link[link.find("//") + 2:].rstrip("/"))
-
-    main_url = str(min(links, key=len))
-    links.remove(main_url)
-    pattern = get_pattern(main_url)
 
     sequences = []
 
@@ -262,34 +257,28 @@ def build_tree(init_links: list):
 
         sequences.append(items)
 
-    def nest_dict(seq: list):
-        if len(seq) == 1:
-            return seq[0]
-
-        element = seq.pop()
-
-        return {
-            element:
-                nest_dict(seq)
-        }
-
-    tree = {
-        pattern: {}
-    }
-
-    for item in sequences:
-        temp = nest_dict(item)
-        print(temp)
-
-    print(tree)
+    tree = {}
+    for group in sequences:
+        tree = merge_branch(tree, group)
 
     return tree
 
 
+def merge_branch(tree: dict, branch: list):
+    if len(branch) == 1:
+        return {branch[0]: None}
 
+    key = branch.pop(0)
 
+    if key not in tree:
+        tree[key] = merge_branch({}, branch)
+    elif tree[key] is None:
+        tree[key] = merge_branch({}, branch)
+    else:
+        temp = merge_branch(tree[key], branch)
+        tree[key].update(temp)
 
-
+    return tree
 
 
 if __name__ == "__main__":
@@ -307,28 +296,17 @@ if __name__ == "__main__":
         "https://www.ratatype.com/",
     ]
 
-    # url = urls[-1]
+    url = urls[5]
     #
-    # # links, _ = scan_page(url, 1)
-    # # write_report(url, 1, sorted(links), "limit_2")
+    # links, _ = scan_page(url, 1)
+    # write_report(url, 1, sorted(links), "limit_2")
     #
-    # _, scanned, found = run_for_pages(
-    #     url, nesting_limit=0, subdomains=True,
-    #     time_limit=5, scanned_limit=0, found_limit=0)
-    # write_report(url, len(scanned), found, "sync")
+    _, scanned, found = run_for_pages(
+        url, nesting_limit=3, subdomains=True,
+        time_limit=0, scanned_limit=0, found_limit=50)
+    write_report(url, len(scanned), found, "sync")
 
-    links = [
-        "https://www.google.ru/",
-        "https://www.google.ru/advanced_search",
-        "https://www.google.ru/history/optout",
-        "https://www.google.ru/history/privacyadvisor/search/unauth",
-        "https://www.google.ru/imghp",
-        "https://www.google.ru/intl/ru/about/products",
-        "https://www.google.ru/intl/ru_ru/ads/",
-        "https://www.google.ru/preferences",
-        "https://www.google.ru/services/"
-    ]
-
-    tree = build_tree(links)
-    write_report("nest.ing", 0, tree, "ing")
+    tree = build_tree(found)
+    pprint(tree)
+    write_report(url, 0, tree, "ing")
 
