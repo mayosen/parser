@@ -1,25 +1,23 @@
-[
-    {
-        "url": "https://edu.avosetrov.ru/",
-        "scanned_pages": 1,
-        "found_pages": 16,
-        "pages": [
-            "https://edu.avosetrov.ru/education",
-            "https://edu.avosetrov.ru/education/kiv",
-            "https://edu.avosetrov.ru/education/ma1",
-            "https://edu.avosetrov.ru/education/ma2",
-            "https://edu.avosetrov.ru/education/mm",
-            "https://edu.avosetrov.ru/education/vza",
-            "https://edu.avosetrov.ru/home",
-            "https://edu.avosetrov.ru/home/cv-1",
-            "https://edu.avosetrov.ru/home/timetable",
-            "https://edu.avosetrov.ru/publications",
-            "https://edu.avosetrov.ru/publications/educational",
-            "https://edu.avosetrov.ru/publications/scientific",
-            "https://edu.avosetrov.ru/science",
-            "https://edu.avosetrov.ru/science/achievements",
-            "https://edu.avosetrov.ru/science/directions",
-            "https://edu.avosetrov.ru/science/titles"
-        ]
-    }
-]
+{
+    "url": "https://edu.avosetrov.ru/",
+    "scanned": 1,
+    "found": 16,
+    "endpoints": [
+        "https://edu.avosetrov.ru/education",
+        "https://edu.avosetrov.ru/education/kiv",
+        "https://edu.avosetrov.ru/education/ma1",
+        "https://edu.avosetrov.ru/education/ma2",
+        "https://edu.avosetrov.ru/education/mm",
+        "https://edu.avosetrov.ru/education/vza",
+        "https://edu.avosetrov.ru/home",
+        "https://edu.avosetrov.ru/home/cv-1",
+        "https://edu.avosetrov.ru/home/timetable",
+        "https://edu.avosetrov.ru/publications",
+        "https://edu.avosetrov.ru/publications/educational",
+        "https://edu.avosetrov.ru/publications/scientific",
+        "https://edu.avosetrov.ru/science",
+        "https://edu.avosetrov.ru/science/achievements",
+        "https://edu.avosetrov.ru/science/directions",
+        "https://edu.avosetrov.ru/science/titles"
+    ]
+}
