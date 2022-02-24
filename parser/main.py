@@ -1,5 +1,3 @@
-from pprint import pprint
-
 import requests
 import json
 from time import time
@@ -7,6 +5,8 @@ from random import choice
 from collections import deque
 from statistics import mean
 from bs4 import BeautifulSoup
+
+from pprint import pprint
 
 
 USER_AGENTS = [
@@ -231,11 +231,28 @@ def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
         print(f"found: {len(pages_found)}\n")
         print(f"mean time per page: {mean(times):.2f}")
         print(f"max time per page: {max(times):.2f}")
-        print(f"min time per page: {min(times):.2f}")
+        print(f"min time per page: {min(times):.2f}\n")
 
         times.append(time() - func_time)
 
     return times, pages_scanned, sorted(pages_found)
+
+
+def merge_branch(tree: dict, branch: list):
+    if len(branch) == 1:
+        temp = {branch[0]: None}
+        tree.update(temp)
+        return tree
+
+    key = branch.pop(0)
+
+    if key not in tree or tree[key] is None:
+        tree[key] = merge_branch({}, branch)
+    else:
+        temp = merge_branch(tree[key], branch)
+        tree[key].update(temp)
+
+    return tree
 
 
 def build_tree(init_links: list):
@@ -253,30 +270,17 @@ def build_tree(init_links: list):
             slashed = domains[1].split("/")
             items = dots + slashed
         else:
-            items = link.split(".")[:-1][::-1]
+            items = link.split(".")[:-2][::-1]
 
-        sequences.append(items)
+        if items:
+            sequences.append(items)
+        else:
+            print(None)
 
     tree = {}
+
     for group in sequences:
         tree = merge_branch(tree, group)
-
-    return tree
-
-
-def merge_branch(tree: dict, branch: list):
-    if len(branch) == 1:
-        return {branch[0]: None}
-
-    key = branch.pop(0)
-
-    if key not in tree:
-        tree[key] = merge_branch({}, branch)
-    elif tree[key] is None:
-        tree[key] = merge_branch({}, branch)
-    else:
-        temp = merge_branch(tree[key], branch)
-        tree[key].update(temp)
 
     return tree
 
@@ -297,16 +301,12 @@ if __name__ == "__main__":
     ]
 
     url = urls[5]
-    #
-    # links, _ = scan_page(url, 1)
-    # write_report(url, 1, sorted(links), "limit_2")
-    #
+
     _, scanned, found = run_for_pages(
-        url, nesting_limit=3, subdomains=True,
-        time_limit=0, scanned_limit=0, found_limit=50)
-    write_report(url, len(scanned), found, "sync")
+        url, subdomains=True, nesting_limit=0,
+        time_limit=0, scanned_limit=1, found_limit=0)
+    write_report(url, len(scanned), found, "tree")
 
     tree = build_tree(found)
     pprint(tree)
-    write_report(url, 0, tree, "ing")
 
