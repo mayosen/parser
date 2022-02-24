@@ -7,7 +7,7 @@ from main import scan_page, write_report, run_for_pages
 from asynchro import run_for_pages as run_async
 
 
-class BrokenScanPage(Exception):
+class FailedTest(Exception):
     pass
 
 
@@ -51,7 +51,7 @@ def test_parser(samples: list):
                          found=len(dirt_links),
                          endpoints=sorted(dirt_links)
                          )
-            raise BrokenScanPage(
+            raise FailedTest(
                 f"url: {url} expected: {sample['found']} "
                 f"vs scanned: {len(links)}")
     else:
