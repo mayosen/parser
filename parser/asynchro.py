@@ -74,7 +74,7 @@ async def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
         print(f"found: {len(pages_found)}\n")
         print(f"mean time per page: {mean(times):.2f}")
         print(f"max time per page: {max(times):.2f}")
-        print(f"min time per page: {min(times):.2f}")
+        print(f"min time per page: {min(times):.2f}\n")
 
         times.append(time() - func_time)
 
@@ -84,7 +84,7 @@ async def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    url = "https://google.com/"
+    url = "https://www.google.com/"
 
     _, scanned, found = asyncio.run(
         run_for_pages(
