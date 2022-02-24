@@ -74,6 +74,13 @@ def get_pattern(url: str, full=True):
 
 
 def is_other_site(url: str):
+    """Checks if href like '/link' is other site.
+
+    /catalog/43 -> False
+    /catalog/ring.html -> False
+    /wikipedia.org/ -> True
+    """
+
     url = url.rstrip(".html").rstrip("htm")
 
     if "." in url:
@@ -98,19 +105,27 @@ def write_report(url: str, postfix="", **fields):
 
 
 def has_subdomains(link: str):
-    clean_link = link[link.find("/") + 2:]
-    subdomains = clean_link[:clean_link.find("/")].count(".") - 1
+    """Checks if site has subdomains.
+
+    https://google.com/ -> False
+    https://www.google.com/ -> True
+    """
+
+    link = link[link.find("/") + 2:]
+    subdomains = link[:link.find("/")].count(".") - 1
     return subdomains > 0
 
 
 def count_nesting(link: str):
-    clean_link = link[link.find("/") + 2:]
-    dots = clean_link[:clean_link.rfind("/") + 1].count(".") - 1
-    slashes = clean_link.count("/")
+    """Returns a number of nesting by '/' on sites."""
+
+    link = link[link.find("/") + 2:]
+
+    slashes = link.count("/")
     if not link[link.rfind("/") + 1:]:
         slashes -= 1
 
-    return dots + slashes
+    return slashes
 
 
 def process_link(template: str, link: str, subdomains=True, nesting_limit=0):
