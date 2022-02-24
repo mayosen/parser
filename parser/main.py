@@ -120,8 +120,10 @@ def process_link(template: str, link: str, subdomains=True, nesting_limit=0):
     pattern = get_pattern(template)
 
     if pattern not in link:
-        if link.startswith(("/", "#")):
-            if link == "/" or link == "#":
+        if link.startswith("#"):
+            link = template + "/"
+        elif link.startswith("/"):
+            if link == "/":
                 link = template + "/"
             elif is_other_site(link):
                 return None
@@ -307,17 +309,15 @@ if __name__ == "__main__":
     _, scanned, found = run_for_pages(
         url, subdomains=True, nesting_limit=0,
         time_limit=0, scanned_limit=1, found_limit=0)
-
-    pprint(found)
-
-    tree = {
-        get_pattern(url): build_tree(found)
-    }
+    #
+    # tree = {
+    #     get_pattern(url): build_tree(found)
+    # }
 
     write_report(
-        url, "tree",
+        url, "_",
         scanned=len(scanned),
         found=len(found),
         endpoints=found,
-        tree=tree,
+        # tree=tree,
     )
