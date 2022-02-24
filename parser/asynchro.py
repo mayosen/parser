@@ -3,6 +3,7 @@ import aiohttp
 from time import time
 from statistics import mean
 from random import choice
+
 from main import search_for_hrefs, get_main_url, write_report, USER_AGENTS
 
 
@@ -90,4 +91,9 @@ if __name__ == "__main__":
             url, subdomains=True, nesting_limit=3,
             time_limit=0, scanned_limit=15, found_limit=0)
     )
-    write_report(url, len(scanned), found, "async")
+    write_report(
+        url, "async",
+        scanned=len(scanned),
+        found=len(found),
+        endpoints=found
+    )

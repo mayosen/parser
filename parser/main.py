@@ -26,6 +26,8 @@ USER_AGENTS = [
 
 
 def request_for_page(url: str):
+
+
     headers = {
         "User-Agent": choice(USER_AGENTS)
     }
@@ -68,16 +70,7 @@ def is_other_site(url: str):
     return other
 
 
-def form_report(url: str, scanned_pages: int, found_pages: int, pages: list):
-    return {
-        "url": url,
-        "scanned_pages": scanned_pages,
-        "found_pages": found_pages,
-        "pages": pages
-    }
-
-
-def write_report(url: str, scanned: int, links: list, postfix=""):
+def write_report(url: str, postfix="", **fields):
     main_domain = get_main_domain(url)
 
     if not postfix:
@@ -86,7 +79,7 @@ def write_report(url: str, scanned: int, links: list, postfix=""):
         file_name = "temp/_" + main_domain + "_" + postfix + ".json"
 
     with open(file_name, "w") as file:
-        report = form_report(url, scanned, len(links), links),
+        report = dict(url=url, **fields)
         json.dump(report, file, indent=4)
 
 
@@ -274,8 +267,6 @@ def build_tree(init_links: list):
 
         if items:
             sequences.append(items)
-        else:
-            print(None)
 
     tree = {}
 
@@ -305,7 +296,12 @@ if __name__ == "__main__":
     _, scanned, found = run_for_pages(
         url, subdomains=True, nesting_limit=0,
         time_limit=0, scanned_limit=1, found_limit=0)
-    write_report(url, len(scanned), found, "tree")
+
+    write_report(
+        url, "tree",
+        scanned=len(scanned),
+        found=len(found),
+        endpoints=found)
 
     tree = build_tree(found)
     pprint(tree)
