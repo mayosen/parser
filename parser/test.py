@@ -33,7 +33,7 @@ def read_all_samples():
     return samples
 
 
-def test_parser(samples: list):
+def test_scan_page(samples: list):
     print("started testing.")
 
     for sample in samples:
@@ -153,7 +153,7 @@ def write_tests(urls: list):
 
 if __name__ == "__main__":
     samples = read_all_samples()
-    test_parser(samples)
+    test_scan_page(samples)
 
     # url = "https://www.google.com/"
     # test_sync(url)

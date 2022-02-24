@@ -26,8 +26,6 @@ USER_AGENTS = [
 
 
 def request_for_page(url: str):
-
-
     headers = {
         "User-Agent": choice(USER_AGENTS)
     }
@@ -36,7 +34,12 @@ def request_for_page(url: str):
     return response.text
 
 
-def get_main_url(url: str):
+def get_template(url: str):
+    """Returns a template for creating links by adding endpoints.
+
+    'https://gljewelry.com/about/' -> 'https://gljewelry.com'
+    """
+
     first_dot = url.find(".")
     if "/" in url[first_dot:]:
         url = url[:url.find("/", first_dot)]
@@ -44,39 +47,50 @@ def get_main_url(url: str):
     return url
 
 
-def get_main_domain(url: str):
-    url = url[:url.rfind(".")]
+def get_pattern(url: str, full=True):
+    """Returns a top- and a second-level or only top-level domain parts.
 
-    if "." in url:
-        url = url[url.rfind(".") + 1:]
-    else:
-        url = url[url.rfind("/") + 1:]
+    'https://www.google.ru/services/' -> 'google.ru' or 'google'
+    """
+
+    if url.endswith((".html", ".htm")):
+        url = url[:url.rfind(".htm")]
+
+    url = url[url.find("//") + 2:]
+
+    if "/" in url:
+        url = url[:url.find("/")]
+
+    cutten = url[:url.rfind(".")]
+
+    if "." in cutten:
+        next_dot = cutten.rfind(".")
+        url = url[next_dot + 1:]
+
+    if not full:
+        url =  url[:url.rfind(".")]
 
     return url
 
 
 def is_other_site(url: str):
-    other = False
+    url = url.rstrip(".html").rstrip("htm")
 
     if "." in url:
-        if url.endswith(".html"):
-            url = url[:-5]
-        elif url.endswith(".htm"):
-            url = url[:-4]
-
-        if "." in url:
-            other = True
-
-    return other
+        return True
+    else:
+        return False
 
 
 def write_report(url: str, postfix="", **fields):
-    main_domain = get_main_domain(url)
+    """Writes a JSON with custom fields."""
+
+    main_domain = get_pattern(url, full=False)
 
     if not postfix:
         file_name = "samples/" + main_domain + ".json"
     else:
-        file_name = "temp/_" + main_domain + "_" + postfix + ".json"
+        file_name = "reports/" + main_domain + "_" + postfix + ".json"
 
     with open(file_name, "w") as file:
         report = dict(url=url, **fields)
@@ -99,35 +113,31 @@ def count_nesting(link: str):
     return dots + slashes
 
 
-def get_pattern(main_url: str):
-    return get_main_domain(main_url) + main_url[main_url.rfind("."):]
-
-
-def process_link(main_url: str, link: str, subdomains=True, nesting_limit=0):
+def process_link(template: str, link: str, subdomains=True, nesting_limit=0):
     if "?" in link:
         link = link[:link.find("?")]
 
-    pattern = get_pattern(main_url)
+    pattern = get_pattern(template)
 
     if pattern not in link:
-        if link.startswith("/") or link.startswith("#"):
+        if link.startswith(("/", "#")):
             if link == "/" or link == "#":
-                link = main_url + "/"
+                link = template + "/"
             elif is_other_site(link):
                 return None
             else:
-                link = main_url + link
+                link = template + link
         else:
             return None
     elif link.startswith("//"):
         if "." in link[link.find(pattern) + len(pattern):]:
             return None
 
-        protocol = main_url[:main_url.find("/") + 2]
+        protocol = template[:template.find("/") + 2]
         link = protocol + link[2:]
-    elif not (link.startswith("https://") or link.startswith("http://")):
+    elif not link.startswith(("https://", "http://")):
         return None
-    elif not link.startswith(main_url):
+    elif not link.startswith(template):
         pattern_position = link.find(pattern)
         if link[pattern_position - 1] != ".":
             return None
@@ -143,7 +153,7 @@ def process_link(main_url: str, link: str, subdomains=True, nesting_limit=0):
     if "#" in link:
         link = link[:link.rfind("#")]
 
-    if link == main_url:
+    if link == template:
         link += "/"
 
     if not subdomains and has_subdomains(link):
@@ -156,14 +166,14 @@ def process_link(main_url: str, link: str, subdomains=True, nesting_limit=0):
 
 
 def search_for_hrefs(
-        main_url: str, page: str, subdomains=True, nesting_limit=0):
+        template: str, page: str, subdomains=True, nesting_limit=0):
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
     clean_links = []
 
     for link in links:
         processed_link = process_link(
-            main_url, link['href'], subdomains, nesting_limit)
+            template, link['href'], subdomains, nesting_limit)
 
         if processed_link:
             clean_links.append(processed_link)
@@ -176,9 +186,9 @@ def search_for_hrefs(
 def scan_page(url: str, subdomains=True, nesting_limit=0):
     print("scanning:", url)
     page = request_for_page(url)
-    main_url = get_main_url(url)
+    template = get_template(url)
     clean_links, dirt_links = search_for_hrefs(
-        main_url, page, subdomains, nesting_limit)
+        template, page, subdomains, nesting_limit)
     return clean_links, dirt_links
 
 
@@ -276,33 +286,38 @@ def build_tree(init_links: list):
     return tree
 
 
-if __name__ == "__main__":
-    urls = [
-        "https://edu.avosetrov.ru/",
-        "http://www.avosetrov.ru/",
-        "https://dvmn.org/modules/",
-        "https://gljewelry.com/about/",
-        "https://www.google.ru/",
-        "https://www.google.com/",
-        "https://spinit.dev/",
-        "https://vk.com/",
-        "https://www.wikipedia.org/",
-        "https://www.coursera.org/",
-        "https://www.ratatype.com/",
-    ]
+URLS = [
+    "https://edu.avosetrov.ru/",
+    "http://www.avosetrov.ru/",
+    "https://dvmn.org/modules/",
+    "https://gljewelry.com/about/",
+    "https://www.google.ru/",
+    "https://www.google.com/",
+    "https://spinit.dev/",
+    "https://vk.com/",
+    "https://www.wikipedia.org/",
+    "https://www.coursera.org/",
+    "https://www.ratatype.com/",
+]
 
-    url = urls[5]
+
+if __name__ == "__main__":
+    url = URLS[5]
 
     _, scanned, found = run_for_pages(
         url, subdomains=True, nesting_limit=0,
         time_limit=0, scanned_limit=1, found_limit=0)
 
+    pprint(found)
+
+    tree = {
+        get_pattern(url): build_tree(found)
+    }
+
     write_report(
         url, "tree",
         scanned=len(scanned),
         found=len(found),
-        endpoints=found)
-
-    tree = build_tree(found)
-    pprint(tree)
-
+        endpoints=found,
+        tree=tree,
+    )
