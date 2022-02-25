@@ -92,7 +92,10 @@ def has_subdomains(url: str):
     """
 
     url = url[url.find("/") + 2:]
-    subdomains = url[:url.find("/")].count(".") - 1
+    if "/" in url:
+        url = url[:url.find("/")]
+
+    subdomains = url.count(".") - 1
     return subdomains > 0
 
 
