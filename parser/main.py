@@ -76,32 +76,14 @@ def get_pattern(url: str, full=True):
 def is_other_site(url: str):
     """Checks if href like '/link' is other site.
 
-    /catalog/43 -> False
-    /catalog/ring.html -> False
-    /wikipedia.org/ -> True
+    '/catalog/43' -> False
+    '/catalog/ring.html' -> False
+    '/wikipedia.org/' -> True
     """
 
     url = url.rstrip(".html").rstrip("htm")
 
-    if "." in url:
-        return True
-    else:
-        return False
-
-
-def write_report(url: str, postfix="", **fields):
-    """Writes a JSON with custom fields."""
-
-    main_domain = get_pattern(url, full=False)
-
-    if not postfix:
-        file_name = "samples/" + main_domain + ".json"
-    else:
-        file_name = "reports/" + main_domain + "_" + postfix + ".json"
-
-    with open(file_name, "w") as file:
-        report = dict(url=url, **fields)
-        json.dump(report, file, indent=4)
+    return "." in url
 
 
 def has_subdomains(link: str):
@@ -129,6 +111,8 @@ def count_nesting(link: str):
 
 
 def process_link(template: str, link: str, subdomains=True, nesting_limit=0):
+    """Returns cleaned of tags link to the site or None if link is invalid."""
+
     if "?" in link:
         link = link[:link.find("?")]
 
@@ -149,7 +133,6 @@ def process_link(template: str, link: str, subdomains=True, nesting_limit=0):
     elif link.startswith("//"):
         if "." in link[link.find(pattern) + len(pattern):]:
             return None
-
         protocol = template[:template.find("/") + 2]
         link = protocol + link[2:]
     elif not link.startswith(("https://", "http://")):
@@ -159,16 +142,11 @@ def process_link(template: str, link: str, subdomains=True, nesting_limit=0):
         if link[pattern_position - 1] != ".":
             return None
 
-    if "&" in link:
-        link = link[:link.find("&")]
-        link = link[:link.rfind("/") + 1]
-
-    if "=" in link:
-        link = link[:link.find("=")]
-        link = link[:link.rfind("/") + 1]
-
     if "#" in link:
         link = link[:link.rfind("#")]
+
+    if "&" in link:
+        link = link[:link.find("&")]
 
     if link == template:
         link += "/"
@@ -182,8 +160,10 @@ def process_link(template: str, link: str, subdomains=True, nesting_limit=0):
     return link
 
 
-def search_for_hrefs(
-        template: str, page: str, subdomains=True, nesting_limit=0):
+def search_for_hrefs(template: str, page: str,
+                     subdomains=True, nesting_limit=0):
+    """Parses html page for unique <a href> tags."""
+
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
     clean_links = []
@@ -201,6 +181,8 @@ def search_for_hrefs(
 
 
 def scan_page(url: str, subdomains=True, nesting_limit=0):
+    """Finds urls on the page."""
+    
     print("scanning:", url)
     page = request_for_page(url)
     template = get_template(url)
@@ -211,6 +193,8 @@ def scan_page(url: str, subdomains=True, nesting_limit=0):
 
 def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
                   time_limit=0, scanned_limit=0, found_limit=0):
+    """Makes a pass through all the links found."""
+    
     pages_to_scan = deque()
     pages_to_scan.append(first_url)
 
@@ -259,6 +243,11 @@ def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
 
 
 def merge_branch(tree: dict, branch: list):
+    """Merges branch as list into dictionary.
+
+    Every element in branch is a key.
+    """
+
     if len(branch) == 1:
         temp = {branch[0]: None}
         tree.update(temp)
@@ -275,7 +264,12 @@ def merge_branch(tree: dict, branch: list):
     return tree
 
 
-def build_tree(init_links: list):
+def build_tree(url: str, init_links: list):
+    """Builds tree-structure from found links.
+
+    Subdomains and endpoints are counted equally.
+    """
+
     links = []
 
     for link in init_links:
@@ -300,7 +294,24 @@ def build_tree(init_links: list):
     for group in sequences:
         tree = merge_branch(tree, group)
 
-    return tree
+    return {
+        get_pattern(url): tree,
+    }
+
+
+def write_report(url: str, postfix="", **fields):
+    """Writes a JSON with custom fields."""
+
+    pattern = get_pattern(url, full=False)
+
+    if not postfix:
+        file_name = "samples/" + pattern + ".json"
+    else:
+        file_name = "reports/" + pattern + "_" + postfix + ".json"
+
+    with open(file_name, "w") as file:
+        report = dict(url=url, **fields)
+        json.dump(report, file, indent=4)
 
 
 URLS = [
@@ -322,17 +333,15 @@ if __name__ == "__main__":
     url = URLS[5]
 
     _, scanned, found = run_for_pages(
-        url, subdomains=True, nesting_limit=0,
-        time_limit=0, scanned_limit=1, found_limit=0)
-    #
-    # tree = {
-    #     get_pattern(url): build_tree(found)
-    # }
+        url, subdomains=True, nesting_limit=3,
+        time_limit=0, scanned_limit=10, found_limit=0)
+
+    tree = build_tree(url, found)
 
     write_report(
-        url, "_",
+        url, "test",
         scanned=len(scanned),
         found=len(found),
         endpoints=found,
-        # tree=tree,
+        tree=tree,
     )
