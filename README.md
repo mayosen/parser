@@ -3,6 +3,9 @@ A script for searching all the endpoints of the site and building its map.
 
 There are `test.py` module to test performance and the correctness of scanning, and experimental `asyncho.py` module to request page asynchronously. 
 
+### Compare
+To compare checking found endpoints you can use https://www.xml-sitemaps.com/.
+
 ### Example
 The following code:
 ```python
