@@ -39,8 +39,8 @@ async def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
             scan_time = time()
 
             url = await pages_to_scan.get()
-            # url = pages_to_scan.get_nowait()
-            # Альтернативный способ. Разницы в скорости не замечено
+            # Or url = pages_to_scan.get_nowait()
+            # No difference in performance.
 
             if url in pages_scanned:
                 pages_to_scan.task_done()
