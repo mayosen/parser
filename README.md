@@ -1,7 +1,7 @@
 # Web-parser
 A script for searching all the endpoints of the site and building its map.
 
-There are `test.py` module to test performance and the correctness of `scan_page()` work, and experimental `asyncho.py` module to request page asynchronously. 
+There are `test.py` module to test performance and the correctness of scanning, and experimental `asyncho.py` module to request page asynchronously. 
 
 ### Example
 The following code:
