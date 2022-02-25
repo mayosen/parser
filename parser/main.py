@@ -6,8 +6,6 @@ from collections import deque
 from statistics import mean
 from bs4 import BeautifulSoup
 
-from pprint import pprint
-
 
 USER_AGENTS = [
     ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -86,25 +84,25 @@ def is_other_site(url: str):
     return "." in url
 
 
-def has_subdomains(link: str):
+def has_subdomains(url: str):
     """Checks if site has subdomains.
 
     https://google.com/ -> False
     https://www.google.com/ -> True
     """
 
-    link = link[link.find("/") + 2:]
-    subdomains = link[:link.find("/")].count(".") - 1
+    url = url[url.find("/") + 2:]
+    subdomains = url[:url.find("/")].count(".") - 1
     return subdomains > 0
 
 
-def count_nesting(link: str):
+def count_nesting(url: str):
     """Returns a number of nesting by '/' on sites."""
 
-    link = link[link.find("/") + 2:]
+    url = url[url.find("/") + 2:]
 
-    slashes = link.count("/")
-    if not link[link.rfind("/") + 1:]:
+    slashes = url.count("/")
+    if not url[url.rfind("/") + 1:]:
         slashes -= 1
 
     return slashes
