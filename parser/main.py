@@ -1,4 +1,5 @@
 import requests
+from requests.exceptions import HTTPError
 import json
 from time import time
 from random import choice
@@ -135,8 +136,6 @@ def process_link(template: str, pattern: str, link: str,
     elif not link.startswith(("https://", "http://")):
         return None
     elif not link.startswith(template):
-        # if not other_domains:
-        #     return None
         pattern_position = link.find(pattern)
         symbol = link[pattern_position - 1]
         if not (symbol == "/" or symbol == "."):
@@ -210,7 +209,12 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
             continue
 
         scan_time = time()
-        links, _ = scan_page(url, other_domains, nesting_limit)
+        try:
+            links, _ = scan_page(url, other_domains, nesting_limit)
+        except HTTPError as error:
+            print(f"catched exception: {error}")
+            continue
+
         pages_found.update(links)
         pages_scanned.add(url)
         unique_links = set(links) - pages_scanned - set(pages_to_scan)
@@ -333,11 +337,11 @@ URLS = [
 
 
 if __name__ == "__main__":
-    url = "https://cloud.google.com/"
+    url = "https://www.google.com/"
 
     _, scanned, found = run_for_pages(
         url, other_domains=False, nesting_limit=3,
-        time_limit=0, scanned_limit=10, found_limit=0)
+        time_limit=0, scanned_limit=0, found_limit=0)
 
     # tree = build_tree(url, found)
 
