@@ -294,7 +294,7 @@ def build_tree(url: str, init_links: list):
         tree = merge_branch(tree, group)
 
     return {
-        get_pattern(url): tree,
+        get_pattern(url, full=False): tree,
     }
 
 
