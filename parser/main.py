@@ -300,15 +300,17 @@ def build_tree(url: str, init_links: list):
     }
 
 
-def write_report(url: str, postfix="", **fields):
+def write_report(url: str, name="", **fields):
     """Writes a JSON with custom fields."""
 
     pattern = get_pattern(url, full=False)
 
-    if not postfix:
+    if name.startswith("samples/"):
         file_name = "samples/" + pattern + ".json"
+    elif not name:
+        file_name = "reports/" + pattern + ".json"
     else:
-        file_name = "reports/" + pattern + "_" + postfix + ".json"
+        file_name = "reports/" + pattern + "_" + name + ".json"
 
     with open(file_name, "w") as file:
         report = dict(url=url, **fields)
@@ -337,12 +339,12 @@ if __name__ == "__main__":
         url, subdomains=True, nesting_limit=3,
         time_limit=0, scanned_limit=10, found_limit=0)
 
-    tree = build_tree(url, found)
+    # tree = build_tree(url, found)
 
     write_report(
-        url, "test",
+        url,
         scanned=len(scanned),
         found=len(found),
         endpoints=found,
-        tree=tree,
+        # tree=tree,
     )

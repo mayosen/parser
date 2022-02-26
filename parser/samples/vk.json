@@ -1,10 +1,12 @@
 {
     "url": "https://vk.com/",
     "scanned": 1,
-    "found": 17,
+    "found": 19,
     "endpoints": [
         "https://connect.vk.com/promo",
         "https://dev.vk.com",
+        "https://id.vk.com/privacy",
+        "https://id.vk.com/terms",
         "https://m.vk.com",
         "https://vk.com/",
         "https://vk.com/about",
