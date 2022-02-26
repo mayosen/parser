@@ -46,27 +46,24 @@ def get_template(url: str):
 
 
 def get_pattern(url: str, full=True):
-    """Returns a top- and a second-level or only top-level domain parts.
+    """Returns a top- and a second-level domains or domains of all levels.
 
-    'https://www.google.ru/services/' -> 'google.ru' or 'google'
+    'https://www.google.ru/services/' -> 'www.google.ru' or 'google.ru'
     """
 
     if url.endswith((".html", ".htm")):
-        url = url[:url.rfind(".htm")]
+        url = url[:url.rfind(".")]
 
     url = url[url.find("//") + 2:]
 
     if "/" in url:
         url = url[:url.find("/")]
 
-    cutten = url[:url.rfind(".")]
-
-    if "." in cutten:
-        next_dot = cutten.rfind(".")
-        url = url[next_dot + 1:]
-
     if not full:
-        url =  url[:url.rfind(".")]
+        cutten = url[:url.rfind(".")]
+        if "." in cutten:
+            next_dot = cutten.rfind(".")
+            url = url[next_dot + 1:]
 
     return url
 
@@ -111,13 +108,11 @@ def count_nesting(url: str):
     return slashes
 
 
-def process_link(template: str, link: str, subdomains=True, nesting_limit=0):
+def process_link(template: str, pattern: str, link: str, nesting_limit=0):
     """Returns cleaned of tags link to the site or None if link is invalid."""
 
     if "?" in link:
         link = link[:link.find("?")]
-
-    pattern = get_pattern(template)
 
     if pattern not in link:
         if link.startswith("#"):
@@ -152,9 +147,6 @@ def process_link(template: str, link: str, subdomains=True, nesting_limit=0):
     if link == template:
         link += "/"
 
-    if not subdomains and has_subdomains(link):
-        return None
-
     if nesting_limit and count_nesting(link) > nesting_limit:
         return None
 
@@ -162,16 +154,18 @@ def process_link(template: str, link: str, subdomains=True, nesting_limit=0):
 
 
 def search_for_hrefs(template: str, page: str,
-                     subdomains=True, nesting_limit=0):
+                     nearby_domains=True, nesting_limit=0):
     """Parses html page for unique <a href> tags."""
 
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
     clean_links = []
 
+    pattern = get_pattern(template, not nearby_domains)
+
     for link in links:
         processed_link = process_link(
-            template, link['href'], subdomains, nesting_limit)
+            template, pattern, link['href'], nesting_limit)
 
         if processed_link:
             clean_links.append(processed_link)
@@ -181,18 +175,18 @@ def search_for_hrefs(template: str, page: str,
     return set(clean_links), set(dirt_links)
 
 
-def scan_page(url: str, subdomains=True, nesting_limit=0):
+def scan_page(url: str, nearby_domains=True, nesting_limit=0):
     """Finds urls on the page."""
     
     print("scanning:", url)
     page = request_for_page(url)
     template = get_template(url)
     clean_links, dirt_links = search_for_hrefs(
-        template, page, subdomains, nesting_limit)
+        template, page, nearby_domains, nesting_limit)
     return clean_links, dirt_links
 
 
-def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
+def run_for_pages(first_url: str, nearby_domains=True, nesting_limit=0,
                   time_limit=0, scanned_limit=0, found_limit=0):
     """Makes a pass through all the links found."""
     
@@ -212,7 +206,7 @@ def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
             continue
 
         scan_time = time()
-        links, _ = scan_page(url, subdomains, nesting_limit)
+        links, _ = scan_page(url, nearby_domains, nesting_limit)
         pages_found.update(links)
         pages_scanned.add(url)
         unique_links = set(links) - pages_scanned - set(pages_to_scan)
@@ -304,6 +298,7 @@ def write_report(url: str, name="", **fields):
     """Writes a JSON with custom fields."""
 
     pattern = get_pattern(url, full=False)
+    pattern = pattern[:pattern.rfind(".")]
 
     if name.startswith("samples/"):
         file_name = "samples/" + pattern + ".json"
@@ -324,6 +319,7 @@ URLS = [
     "https://gljewelry.com/about/",
     "https://www.google.ru/",
     "https://www.google.com/",
+    "https://cloud.google.com/",
     "https://spinit.dev/",
     "https://vk.com/",
     "https://www.wikipedia.org/",
@@ -333,10 +329,10 @@ URLS = [
 
 
 if __name__ == "__main__":
-    url = URLS[5]
+    url = URLS[6]
 
     _, scanned, found = run_for_pages(
-        url, subdomains=True, nesting_limit=3,
+        url, nearby_domains=False, nesting_limit=3,
         time_limit=0, scanned_limit=10, found_limit=0)
 
     # tree = build_tree(url, found)
