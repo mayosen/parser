@@ -144,7 +144,7 @@ def write_tests(urls: list):
     for url in urls:
         links, _ = scan_page(url)
         write_report(
-            url,
+            url, "samples/",
             scanned=1,
             found=len(links),
             endpoints=sorted(links),
