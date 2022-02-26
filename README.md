@@ -9,14 +9,13 @@ To compare checking found endpoints you can use https://www.xml-sitemaps.com/.
 ### Scan limitations settings
 - `other_domains: bool` - If `False`, links what don't content initial url domains will be passed.
 
-Example initial link: "https://cloud.google.com/"
-`other_domains = True`. 
-Link "https://console.cloud.google.com/" will be done.
-Link "https://careers.google.com/cloud" will be done too.
-`other_domains = False`. 
-Link "https://console.cloud.google.com/" will be done yet. 
-Link "https://careers.google.com/cloud" will be skipped.
-
+Example initial link: "https://cloud.google.com/":  
+`other_domains = True`.  
+Link "https://console.cloud.google.com/" will be done.  
+Link "https://careers.google.com/cloud" will be done too.  
+`other_domains = False`.  
+Link "https://console.cloud.google.com/" will be done yet.  
+Link "https://careers.google.com/cloud" will be skipped.  
 - `nesting_limit: int` - A limit on endpoints what counts slashes in link.
 
 - `time_limit: int` - A limit on runtime of script. 
