@@ -282,8 +282,8 @@ def build_tree(url: str, init_links: list):
         if "/" in link:
             domains = link.split("/", maxsplit=1)
             dots = domains[0].split(".")[:-2][::-1]
-            slashed = domains[1].split("/")
-            items = dots + slashed
+            slashes = domains[1].split("/")
+            items = dots + slashes
         else:
             items = link.split(".")[:-2][::-1]
 
