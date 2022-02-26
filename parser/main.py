@@ -108,7 +108,8 @@ def count_nesting(url: str):
     return slashes
 
 
-def process_link(template: str, pattern: str, link: str, nesting_limit=0):
+def process_link(template: str, pattern: str, link: str,
+                 other_domains=True, nesting_limit=0):
     """Returns cleaned of tags link to the site or None if link is invalid."""
 
     if "?" in link:
@@ -134,8 +135,11 @@ def process_link(template: str, pattern: str, link: str, nesting_limit=0):
     elif not link.startswith(("https://", "http://")):
         return None
     elif not link.startswith(template):
+        # if not other_domains:
+        #     return None
         pattern_position = link.find(pattern)
-        if link[pattern_position - 1] != ".":
+        symbol = link[pattern_position - 1]
+        if not (symbol == "/" or symbol == "."):
             return None
 
     if "#" in link:
@@ -154,18 +158,18 @@ def process_link(template: str, pattern: str, link: str, nesting_limit=0):
 
 
 def search_for_hrefs(template: str, page: str,
-                     nearby_domains=True, nesting_limit=0):
+                     other_domains=True, nesting_limit=0):
     """Parses html page for unique <a href> tags."""
 
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
     clean_links = []
 
-    pattern = get_pattern(template, not nearby_domains)
+    pattern = get_pattern(template, not other_domains)
 
     for link in links:
         processed_link = process_link(
-            template, pattern, link['href'], nesting_limit)
+            template, pattern, link['href'], other_domains, nesting_limit)
 
         if processed_link:
             clean_links.append(processed_link)
@@ -175,18 +179,18 @@ def search_for_hrefs(template: str, page: str,
     return set(clean_links), set(dirt_links)
 
 
-def scan_page(url: str, nearby_domains=True, nesting_limit=0):
+def scan_page(url: str, other_domains=True, nesting_limit=0):
     """Finds urls on the page."""
     
     print("scanning:", url)
     page = request_for_page(url)
     template = get_template(url)
     clean_links, dirt_links = search_for_hrefs(
-        template, page, nearby_domains, nesting_limit)
+        template, page, other_domains, nesting_limit)
     return clean_links, dirt_links
 
 
-def run_for_pages(first_url: str, nearby_domains=True, nesting_limit=0,
+def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
                   time_limit=0, scanned_limit=0, found_limit=0):
     """Makes a pass through all the links found."""
     
@@ -206,7 +210,7 @@ def run_for_pages(first_url: str, nearby_domains=True, nesting_limit=0,
             continue
 
         scan_time = time()
-        links, _ = scan_page(url, nearby_domains, nesting_limit)
+        links, _ = scan_page(url, other_domains, nesting_limit)
         pages_found.update(links)
         pages_scanned.add(url)
         unique_links = set(links) - pages_scanned - set(pages_to_scan)
@@ -297,7 +301,7 @@ def build_tree(url: str, init_links: list):
 def write_report(url: str, name="", **fields):
     """Writes a JSON with custom fields."""
 
-    pattern = get_pattern(url, full=False)
+    pattern = get_pattern(url, full=True)
     pattern = pattern[:pattern.rfind(".")]
 
     if name.startswith("samples/"):
@@ -329,10 +333,10 @@ URLS = [
 
 
 if __name__ == "__main__":
-    url = URLS[6]
+    url = "https://cloud.google.com/"
 
     _, scanned, found = run_for_pages(
-        url, nearby_domains=False, nesting_limit=3,
+        url, other_domains=False, nesting_limit=3,
         time_limit=0, scanned_limit=10, found_limit=0)
 
     # tree = build_tree(url, found)
