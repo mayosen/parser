@@ -30,7 +30,11 @@ def request_for_page(url: str):
     }
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    return response.text
+
+    if response.history:
+        url = response.url
+
+    return url, response.text
 
 
 def get_template(url: str):
@@ -109,11 +113,17 @@ def count_nesting(url: str):
     return slashes
 
 
-def process_link(template: str, pattern: str, link: str, nesting_limit=0):
+def process_link(url: str, template: str, pattern: str,
+                 link: str, nesting_limit=0):
     """Returns cleaned of tags link to the site or None if link is invalid."""
 
     if "?" in link:
         link = link[:link.find("?")]
+
+    if link.startswith("../"):
+        url = url.rstrip("/")
+        url = url[:url.rfind("/")]
+        link = url + link.lstrip("..")
 
     if pattern not in link:
         if link.startswith("#"):
@@ -155,7 +165,7 @@ def process_link(template: str, pattern: str, link: str, nesting_limit=0):
     return link
 
 
-def search_for_hrefs(template: str, page: str,
+def search_for_hrefs(url:str, template: str, page: str,
                      other_domains=True, nesting_limit=0):
     """Parses html page for unique <a href> tags."""
 
@@ -167,7 +177,7 @@ def search_for_hrefs(template: str, page: str,
 
     for link in dirt_links:
         processed_link = process_link(
-            template, pattern, link, nesting_limit)
+            url, template, pattern, link, nesting_limit)
 
         if processed_link:
             clean_links.append(processed_link)
@@ -179,10 +189,10 @@ def scan_page(url: str, other_domains=True, nesting_limit=0):
     """Finds urls on the page."""
     
     print("scanning:", url)
-    page = request_for_page(url)
+    url, page = request_for_page(url)
     template = get_template(url)
     clean_links, dirt_links = search_for_hrefs(
-        template, page, other_domains, nesting_limit)
+        url, template, page, other_domains, nesting_limit)
     return clean_links, dirt_links
 
 
