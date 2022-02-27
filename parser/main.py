@@ -161,18 +161,16 @@ def search_for_hrefs(template: str, page: str,
 
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
+    dirt_links = [link['href'] for link in links]
     clean_links = []
-
     pattern = get_pattern(template, not other_domains)
 
-    for link in links:
+    for link in dirt_links:
         processed_link = process_link(
-            template, pattern, link['href'], nesting_limit)
+            template, pattern, link, nesting_limit)
 
         if processed_link:
             clean_links.append(processed_link)
-
-    dirt_links = [link['href'] for link in links]
 
     return set(clean_links), set(dirt_links)
 
@@ -216,7 +214,7 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
 
         pages_found.update(links)
         pages_scanned.add(url)
-        unique_links = set(links) - pages_scanned - set(pages_to_scan)
+        unique_links = links - pages_scanned - set(pages_to_scan)
         pages_to_scan.extend(unique_links)
 
         times.append(time() - scan_time)
