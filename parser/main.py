@@ -109,8 +109,7 @@ def count_nesting(url: str):
     return slashes
 
 
-def process_link(template: str, pattern: str, link: str,
-                 other_domains=True, nesting_limit=0):
+def process_link(template: str, pattern: str, link: str, nesting_limit=0):
     """Returns cleaned of tags link to the site or None if link is invalid."""
 
     if "?" in link:
@@ -168,7 +167,7 @@ def search_for_hrefs(template: str, page: str,
 
     for link in links:
         processed_link = process_link(
-            template, pattern, link['href'], other_domains, nesting_limit)
+            template, pattern, link['href'], nesting_limit)
 
         if processed_link:
             clean_links.append(processed_link)
