@@ -64,6 +64,9 @@ def get_pattern(url: str, full=True):
     if "/" in url:
         url = url[:url.find("/")]
 
+    if "?" in url:
+        url = url[:url.find("?")]
+
     if not full:
         cutten = url[:url.rfind(".")]
         if "." in cutten:
@@ -150,6 +153,10 @@ def process_link(page_url: str, template: str, pattern: str,
         if not (symbol == "/" or symbol == "."):
             return None
 
+    after_domain = link[link.find(pattern) + len(pattern):]
+    if after_domain and after_domain[0] != "/":
+        return None
+
     if "#" in link:
         link = link[:link.rfind("#")]
 
@@ -185,14 +192,18 @@ def search_for_hrefs(page_url: str, template: str, page: str,
     return set(clean_links), set(dirt_links)
 
 
-def scan_page(url: str, other_domains=True, nesting_limit=0):
+def scan_page(start_url: str, other_domains=True, nesting_limit=0):
     """Finds urls on the page."""
-    
-    print("scanning:", url)
-    url, page = request_for_page(url)
-    template = get_template(url)
+
+    print("scanning:", start_url)
+    final_url, page = request_for_page(start_url)
+    if start_url != final_url:
+        print("redirected:", final_url)
+    if get_pattern(start_url, False) != get_pattern(final_url, False):
+        return set(), set()
+    template = get_template(final_url)
     clean_links, dirt_links = search_for_hrefs(
-        url, template, page, other_domains, nesting_limit)
+        final_url, template, page, other_domains, nesting_limit)
     return clean_links, dirt_links
 
 
