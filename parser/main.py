@@ -113,7 +113,7 @@ def count_nesting(url: str):
     return slashes
 
 
-def process_link(url: str, template: str, pattern: str,
+def process_link(page_url: str, template: str, pattern: str,
                  link: str, nesting_limit=0):
     """Returns cleaned of tags link to the site or None if link is invalid."""
 
@@ -121,9 +121,9 @@ def process_link(url: str, template: str, pattern: str,
         link = link[:link.find("?")]
 
     if link.startswith("../"):
-        url = url.rstrip("/")
-        url = url[:url.rfind("/")]
-        link = url + link.lstrip("..")
+        page_url = page_url.rstrip("/")
+        page_url = page_url[:page_url.rfind("/")]
+        link = page_url + link.lstrip("..")
 
     if pattern not in link:
         if link.startswith("#"):
@@ -165,7 +165,7 @@ def process_link(url: str, template: str, pattern: str,
     return link
 
 
-def search_for_hrefs(url:str, template: str, page: str,
+def search_for_hrefs(page_url: str, template: str, page: str,
                      other_domains=True, nesting_limit=0):
     """Parses html page for unique <a href> tags."""
 
@@ -177,7 +177,7 @@ def search_for_hrefs(url:str, template: str, page: str,
 
     for link in dirt_links:
         processed_link = process_link(
-            url, template, pattern, link, nesting_limit)
+            page_url, template, pattern, link, nesting_limit)
 
         if processed_link:
             clean_links.append(processed_link)
@@ -274,7 +274,7 @@ def merge_branch(tree: dict, branch: list):
     return tree
 
 
-def build_tree(url: str, init_links: list):
+def build_tree(url: str, found_links: list):
     """Builds tree-structure from found links.
 
     Subdomains and endpoints are counted equally.
@@ -282,7 +282,7 @@ def build_tree(url: str, init_links: list):
 
     links = []
 
-    for link in init_links:
+    for link in found_links:
         links.append(link[link.find("//") + 2:].rstrip("/"))
 
     sequences = []
