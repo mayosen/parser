@@ -68,9 +68,9 @@ def get_pattern(url: str, full=True):
         url = url[:url.find("?")]
 
     if not full:
-        cutten = url[:url.rfind(".")]
-        if "." in cutten:
-            next_dot = cutten.rfind(".")
+        clipped = url[:url.rfind(".")]
+        if "." in clipped:
+            next_dot = clipped.rfind(".")
             url = url[next_dot + 1:]
 
     return url
@@ -230,7 +230,7 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
         try:
             links, _ = scan_page(url, other_domains, nesting_limit)
         except HTTPError as error:
-            print(f"catched exception: {error}")
+            print(f"caught exception: {error}")
             continue
 
         pages_found.update(links)
@@ -338,33 +338,31 @@ def write_report(url: str, name="", **fields):
         json.dump(report, file, indent=4)
 
 
-URLS = [
+SITES = [
     "https://edu.avosetrov.ru/",
     "http://www.avosetrov.ru/",
     "https://dvmn.org/modules/",
     "https://gljewelry.com/about/",
-    "https://www.google.ru/",
     "https://www.google.com/",
     "https://cloud.google.com/",
-    "https://spinit.dev/",
-    "https://vk.com/",
-    "https://www.wikipedia.org/",
+    "https://dev.vk.com/",
     "https://www.coursera.org/",
     "https://www.ratatype.com/",
+    "https://slack.com/",
+    "https://github.com/",
 ]
 
-
 if __name__ == "__main__":
-    url = "https://www.google.com/"
+    site = SITES[-1]
 
     _, scanned, found = run_for_pages(
-        url, other_domains=False, nesting_limit=3,
+        site, other_domains=True, nesting_limit=0,
         time_limit=0, scanned_limit=0, found_limit=0)
 
-    # tree = build_tree(url, found)
+    # tree = build_tree(site, found)
 
     write_report(
-        url,
+        site,
         scanned=len(scanned),
         found=len(found),
         endpoints=found,
