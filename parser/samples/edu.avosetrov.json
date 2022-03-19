@@ -1,9 +1,8 @@
 {
     "url": "https://edu.avosetrov.ru/",
     "scanned": 1,
-    "found": 17,
+    "found": 16,
     "endpoints": [
-        "https://edu.avosetrov.ru/",
         "https://edu.avosetrov.ru/education",
         "https://edu.avosetrov.ru/education/kiv",
         "https://edu.avosetrov.ru/education/ma1",

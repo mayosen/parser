@@ -25,6 +25,8 @@ USER_AGENTS = [
 
 
 def request_for_page(url: str):
+    """Requests for page taking into account bad requests and redirects."""
+
     headers = {
         "User-Agent": choice(USER_AGENTS)
     }
@@ -32,9 +34,21 @@ def request_for_page(url: str):
     response.raise_for_status()
 
     if response.history:
-        url = response.url
+        url = process_redirect(response.url)
 
     return url, response.text
+
+
+def process_redirect(url: str):
+    """Cleans url from tags."""
+
+    if "?" in url:
+        url = url[:url.find("?")]
+    if "#" in url:
+        url = url[:url.rfind("#")]
+    if "&" in url:
+        url = url[:url.find("&")]
+    return url
 
 
 def get_template(url: str):
@@ -92,8 +106,8 @@ def is_other_site(url: str):
 def has_subdomains(url: str):
     """Checks if site has subdomains.
 
-    https://google.com/ -> False
-    https://www.google.com/ -> True
+    'https://google.com/' -> False
+    'https://www.google.com/' -> True
     """
 
     url = url[url.find("/") + 2:]
@@ -123,23 +137,30 @@ def process_link(page_url: str, template: str, pattern: str,
     if "?" in link:
         link = link[:link.find("?")]
 
-    if link.startswith("../"):
-        page_url = page_url.rstrip("/")
-        page_url = page_url[:page_url.rfind("/")]
-        link = page_url + link.lstrip("..")
+    if link.startswith(("tel:", "mailto:")):
+        return None
 
     if pattern not in link:
-        if link.startswith("#"):
+        if is_other_site(link):
+            return None
+        elif link.startswith("../"):
+            page_url = page_url.rstrip("/")
+            page_url = page_url[:page_url.rfind("/")]
+            link = page_url + link.lstrip("..")
+        elif link.startswith("#"):
+            link = template + "/"
+        elif link == "/":
             link = template + "/"
         elif link.startswith("/"):
-            if link == "/":
-                link = template + "/"
-            elif is_other_site(link):
-                return None
-            else:
-                link = template + link
-        else:
+            link = template + link
+        elif "://" in link:
+            # case when link opens desktop app
+            # example: 'tg://resolve' - Telegram
             return None
+        elif not link:
+            return None
+        else:
+            link = template + "/" + link
     elif link.startswith("//"):
         if "." in link[link.find(pattern) + len(pattern):]:
             return None
@@ -153,6 +174,10 @@ def process_link(page_url: str, template: str, pattern: str,
         if not (symbol == "/" or symbol == "."):
             return None
 
+    # Checking is required domain hosted on higher level domain
+    # example: 'ratatape.com' and `ratatype.com.br'
+    # or if topdomain is larger when required
+    # example: 'github.com' and 'github.community'
     after_domain = link[link.find(pattern) + len(pattern):]
     if after_domain and after_domain[0] != "/":
         return None
@@ -230,7 +255,7 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
         try:
             links, _ = scan_page(url, other_domains, nesting_limit)
         except HTTPError as error:
-            print(f"caught exception: {error}")
+            print(f"exception: {error}")
             continue
 
         pages_found.update(links)
@@ -338,7 +363,7 @@ def write_report(url: str, name="", **fields):
         json.dump(report, file, indent=4)
 
 
-SITES = [
+examples = [
     "https://edu.avosetrov.ru/",
     "http://www.avosetrov.ru/",
     "https://dvmn.org/modules/",
@@ -353,7 +378,7 @@ SITES = [
 ]
 
 if __name__ == "__main__":
-    site = SITES[-1]
+    site = "https://www.google.com/"
 
     _, scanned, found = run_for_pages(
         site, other_domains=True, nesting_limit=0,
