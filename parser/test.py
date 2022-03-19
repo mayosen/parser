@@ -3,7 +3,7 @@ import asyncio
 from os import listdir
 from statistics import mean
 
-from main import scan_page, write_report, run_for_pages
+from main import scan_page, write_report, run_for_pages, examples
 from asynchro import run_for_pages as run_async
 
 
@@ -33,6 +33,17 @@ def read_all_samples():
     return samples
 
 
+def write_tests(urls: list):
+    for url in urls:
+        links, _ = scan_page(url)
+        write_report(
+            url, "samples/",
+            scanned=1,
+            found=len(links),
+            endpoints=sorted(links),
+        )
+
+
 def test_scan_page(samples: list):
     print("started testing.")
 
@@ -58,97 +69,61 @@ def test_scan_page(samples: list):
         print("successfully tested.")
 
 
+def test_report(url: str, postfix: str, total_time: float, mean_time: float,
+                scanned: int, found: int, endpoints: list):
+    write_report(
+        url, postfix,
+        total_time=total_time,
+        mean_time=mean_time,
+        scanned=scanned,
+        found=found,
+        endpoints=endpoints,
+    )
+
+
 def test_sync(url: str):
+    print("scanning synchronously.\n")
+
+    print(f"scanning with time limit:", url)
     times, scanned, found = run_for_pages(url, time_limit=5)
     total = times.pop()
-    write_report(
-        url, "t_async_time",
-        total_time=round(total, 2),
-        mean_time=round(mean(times), 2),
-        scanned=len(scanned),
-        found=len(found),
-        endpoints=found,
-    )
+    test_report(url, "t_time_async", round(total, 2), round(mean(times), 2),
+                len(scanned), len(found), found)
 
+    print(f"scanning with scanned limit:", url)
     times, scanned, found = run_for_pages(url, scanned_limit=15)
     total = times.pop()
-    write_report(
-        url, "t_async_scanned",
-        total_time=round(total, 2),
-        mean_time=round(mean(times), 2),
-        scanned=len(scanned),
-        found=len(found),
-        endpoints=found,
-    )
+    test_report(url, "t_scanned_async", round(total, 2), round(mean(times), 2),
+                len(scanned), len(found), found)
 
+    print(f"scanning with found limit:", url)
     times, scanned, found = run_for_pages(url, found_limit=250)
     total = times.pop()
-    write_report(
-        url, "t_async_found",
-        total_time=round(total, 2),
-        mean_time=round(mean(times), 2),
-        scanned=len(scanned),
-        found=len(found),
-        endpoints=found,
-    )
+    test_report(url, "t_found_async", round(total, 2), round(mean(times), 2),
+                len(scanned), len(found), found)
 
 
 def test_async(url: str):
+    print("scanning asynchronously.\n")
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+    print(f"scanning with time limit:", url)
     times, scanned, found = asyncio.run(run_async(url, time_limit=5))
     total = times.pop()
-    write_report(
-        url, "t_sync_time",
-        total_time=round(total, 2),
-        mean_time=round(mean(times), 2),
-        scanned=len(scanned),
-        found=len(found),
-        endpoints=found,
-    )
+    test_report(url, "t_time_sync", round(total, 2), round(mean(times), 2),
+                len(scanned), len(found), found)
 
+    print(f"scanning with scanned limit:", url)
     times, scanned, found = asyncio.run(run_async(url, scanned_limit=15))
     total = times.pop()
-    write_report(
-        url, "t_sync_scanned",
-        total_time=round(total, 2),
-        mean_time=round(mean(times), 2),
-        scanned=len(scanned),
-        found=len(found),
-        endpoints=found,
-    )
+    test_report(url, "t_scanned_sync", round(total, 2), round(mean(times), 2),
+                len(scanned), len(found), found)
 
+    print(f"scanning with found limit:", url)
     times, scanned, found = asyncio.run(run_async(url, found_limit=250))
     total = times.pop()
-    write_report(
-        url, "t_sync_found",
-        total_time=round(total, 2),
-        mean_time=round(mean(times), 2),
-        scanned=len(scanned),
-        found=len(found),
-        endpoints=found,
-    )
-
-
-TESTING_SITES = [
-    "https://edu.avosetrov.ru/",
-    "https://dvmn.org/modules/",
-    "https://gljewelry.com/about/",
-    "https://www.google.ru/",
-    "https://spinit.dev/",
-    "https://vk.com/",
-]
-
-
-def write_tests(urls: list):
-    for url in urls:
-        links, _ = scan_page(url)
-        write_report(
-            url, "samples/",
-            scanned=1,
-            found=len(links),
-            endpoints=sorted(links),
-        )
+    test_report(url, "t_found_sync", round(total, 2), round(mean(times), 2),
+                len(scanned), len(found), found)
 
 
 if __name__ == "__main__":
