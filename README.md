@@ -47,11 +47,11 @@ A list with forbidden endpoints.
 ```python
 initial_link = "https://dvmn.org/modules/"
 ignore_list = [
-            "/signin/", "/encyclopedia/", "/.../async-python/",
+	"/signin/", "/encyclopedia/", "/.../async-python/",
 ]
 # The following links will be skipped:
 link = "https://dvmn.org/signin"
-link = "https://dvmn.org/encyclopedia/tutorial/tutorial_git/".
+link = "https://dvmn.org/encyclopedia/tutorial/tutorial_git/"
 link = "https://dvmn.org/modules/async-python/"
 ```
 
