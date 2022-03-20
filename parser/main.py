@@ -131,7 +131,7 @@ def count_nesting(url: str):
 
 
 def process_link(page_url: str, template: str, pattern: str,
-                 link: str, nesting_limit=0):
+                 link: str, nesting_limit=0, ignore_list=None):
     """Returns cleaned of tags link to the site or None if link is invalid."""
 
     if "?" in link:
@@ -154,7 +154,7 @@ def process_link(page_url: str, template: str, pattern: str,
         elif link.startswith("/"):
             link = template + link
         elif "://" in link:
-            # case when link opens desktop app
+            # Case when link opens desktop app
             # example: 'tg://resolve' - Telegram
             return None
         elif not link:
@@ -194,11 +194,33 @@ def process_link(page_url: str, template: str, pattern: str,
     if nesting_limit and count_nesting(link) > nesting_limit:
         return None
 
+    if ignore_list:
+        prepared = link[link.find("//") + 2:]
+        prepared = prepared[prepared.find("/") + 1:]
+        prepared = split_pattern(prepared)
+
+        for ignore_sample in ignore_list:
+            for endpoint, forbidden in zip(prepared, ignore_sample):
+                if endpoint == forbidden:
+                    return None
+
     return link
 
 
+def split_pattern(url: str):
+    """Splits ignore pattern.
+
+    '/login' -> ['login]
+    /.../async/' -> ['...', 'async']
+    """
+
+    temp_list = url.split("/")
+    filtered = list(filter(lambda item: item, temp_list))
+    return filtered
+
+
 def search_for_hrefs(page_url: str, template: str, page: str,
-                     other_domains=True, nesting_limit=0):
+                     other_domains=True, nesting_limit=0, ignore_list=None):
     """Parses html page for unique <a href> tags."""
 
     parsed_soup = BeautifulSoup(page, "lxml")
@@ -209,7 +231,8 @@ def search_for_hrefs(page_url: str, template: str, page: str,
 
     for link in dirt_links:
         processed_link = process_link(
-            page_url, template, pattern, link, nesting_limit)
+            page_url, template, pattern, link, nesting_limit, ignore_list
+        )
 
         if processed_link:
             clean_links.append(processed_link)
@@ -217,7 +240,8 @@ def search_for_hrefs(page_url: str, template: str, page: str,
     return set(clean_links), set(dirt_links)
 
 
-def scan_page(start_url: str, other_domains=True, nesting_limit=0):
+def scan_page(start_url: str, other_domains=True,
+              nesting_limit=0, ignore_list=None):
     """Finds urls on the page."""
 
     print("scanning:", start_url)
@@ -228,14 +252,15 @@ def scan_page(start_url: str, other_domains=True, nesting_limit=0):
         return set(), set()
     template = get_template(final_url)
     clean_links, dirt_links = search_for_hrefs(
-        final_url, template, page, other_domains, nesting_limit)
+        final_url, template, page, other_domains, nesting_limit, ignore_list)
     return clean_links, dirt_links
 
 
 def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
-                  time_limit=0, scanned_limit=0, found_limit=0):
+                  time_limit=0, scanned_limit=0, found_limit=0,
+                  ignore_list=None, params=None):
     """Makes a pass through all the links found."""
-    
+
     pages_to_scan = deque()
     pages_to_scan.append(first_url)
 
@@ -245,6 +270,17 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
     times = []
     func_time = time()
 
+    if params:
+        other_domains = params.get("other_domains", True)
+        nesting_limit = params.get("nesting_limit", 0)
+        time_limit = params.get("time_limit", 0)
+        scanned_limit = params.get("scanned_limit", 0)
+        found_limit = params.get("found_limit", 0)
+        ignore_list = params.get("ignore_list", None)
+
+    if ignore_list:
+        ignore_list = [split_pattern(pattern) for pattern in ignore_list]
+
     while pages_to_scan:
         url = pages_to_scan.popleft()
 
@@ -253,7 +289,7 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
 
         scan_time = time()
         try:
-            links, _ = scan_page(url, other_domains, nesting_limit)
+            links, _ = scan_page(url, other_domains, nesting_limit, ignore_list)
         except HTTPError as error:
             print(f"exception: {error}")
             continue
@@ -378,11 +414,20 @@ examples = [
 ]
 
 if __name__ == "__main__":
-    site = "https://www.google.com/"
+    site = "https://dvmn.org/modules/"
 
-    _, scanned, found = run_for_pages(
-        site, other_domains=True, nesting_limit=0,
-        time_limit=0, scanned_limit=0, found_limit=0)
+    params = dict(
+        other_domains=True,
+        nesting_limit=3,
+        time_limit=0,
+        scanned_limit=0,
+        found_limit=0,
+        ignore_list=[
+            "/signin/", "/encyclopedia/", "/.../async-python/",
+        ],
+    )
+
+    _, scanned, found = run_for_pages(site, params=params)
 
     # tree = build_tree(site, found)
 
