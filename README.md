@@ -3,7 +3,7 @@ A script for searching all the endpoints of the site and building its map.
 
 There are `main.py` module with necessary functions, `test.py` module to test performance and the correctness of scanning, and experimental `asyncho.py` module to request page asynchronously. 
 
-### To Compare
+### To compare
 To compare script in searching of endpoints you can use https://www.xml-sitemaps.com/.
 
 ### Searching parameters
@@ -74,22 +74,19 @@ times, scanned, found = run_for_pages(site, params=params)
 ### Example
 The following code:
 ```python
-url = "https://www.google.com/"
+site = "https://www.google.com/"
 
-_, scanned, found = run_for_pages(
-        url, nesting_limit=3,
-        scanned_limit=2
-		)
+_, scanned, found = run_for_pages(site, nesting_limit=3, scanned_limit=2)
 		
-tree = build_tree(url, found)
+tree = build_tree(site, found)
 		
 write_report(
-        url,
-        scanned=len(scanned),
-        found=len(found),
-        endpoints=found,
-        tree=tree,
-    )
+	site,
+	scanned=len(scanned),
+	found=len(found),
+	endpoints=found,
+	tree=tree,
+)
 ```	
 makes the following json file:
 ```yaml
