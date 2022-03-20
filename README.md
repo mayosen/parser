@@ -1,28 +1,75 @@
 # Web-parser
 A script for searching all the endpoints of the site and building its map.
 
-There are `test.py` module to test performance and the correctness of scanning, and experimental `asyncho.py` module to request page asynchronously. 
+There are `main.py` module with necessary functions, `test.py` module to test performance and the correctness of scanning, and experimental `asyncho.py` module to request page asynchronously. 
 
-### Compare
-To compare checking found endpoints you can use https://www.xml-sitemaps.com/.
+### To Compare
+To compare script in searching of endpoints you can use https://www.xml-sitemaps.com/.
 
-### Scan limitations
-- `other_domains: bool` - If `False`, links what don't content initial url domains will be passed.  
-Example initial link: "https://cloud.google.com/":  
-`True`:  
-Link "https://console.cloud.google.com/" will be done.  
-Link "https://careers.google.com/cloud" will be done too.  
-`False`:  
-Link "https://console.cloud.google.com/" will be done yet.  
-Link "https://careers.google.com/cloud" will be skipped.   
-- `nesting_limit: int` - A limit on endpoints what counts slashes in link.
+### Searching parameters
+1. `other_domains: bool`
 
-- `time_limit: int` - A limit on runtime of script. 
+This parameter filters links not containing required domain.
+```python
+initial_link = "https://cloud.google.com/"
+link = "https://console.cloud.google.com/"
+# If `True` will be passed, if `False` will be passed yet.
+link = "https://careers.google.com/cloud"
+# If `True` will be passed, if `False` will be skipped.
+```
 
-- `scanned_limit: int` - A limit on requested and scanned pages.
+2. `nesting_limit: int` 
 
-- `found_limit: int` - A limit on total found unique pages.
+Limit on link nesting counted by slashes.
+```python
+nesting_limit = 2
+link = "https://dvmn.org/modules/website-layout-for-pydev/"
+# Will be passed.
+link = "https://dvmn.org/modules/website-layout-for-pydev/current-lesson/"
+# Will be skipped.
+```
 
+3. `time_limit: int or float`
+
+A limit on runtime of script. 
+
+4. `scanned_limit: int`
+
+A limit on number scanned (requested) pages.
+
+5. `found_limit: int`
+
+A limit on total number of found unique pages.
+
+6. `ignore_list: list`
+
+A list with forbidden endpoints.
+```python
+initial_link = "https://dvmn.org/modules/"
+ignore_list = [
+            "/signin/", "/encyclopedia/", "/.../async-python/",
+]
+# The following links will be skipped:
+link = "https://dvmn.org/signin"
+link = "https://dvmn.org/encyclopedia/tutorial/tutorial_git/".
+link = "https://dvmn.org/modules/async-python/"
+```
+
+- Instead of passing arguments separately, you can use `params` dict.
+```python
+site = "https://dvmn.org/modules/"
+params = dict(
+    other_domains=True,
+    nesting_limit=3,
+    time_limit=0,
+    scanned_limit=0,
+    found_limit=0,
+    ignore_list=[
+        "/signin/", "/encyclopedia/", "/.../async-python/",
+    ],
+)
+times, scanned, found = run_for_pages(site, params=params)
+``` 
 
 ### Example
 The following code:
@@ -31,7 +78,8 @@ url = "https://www.google.com/"
 
 _, scanned, found = run_for_pages(
         url, nesting_limit=3,
-        scanned_limit=2)
+        scanned_limit=2
+		)
 		
 tree = build_tree(url, found)
 		
