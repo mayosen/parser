@@ -197,7 +197,7 @@ def process_link(page_url: str, template: str, pattern: str,
     if ignore_list:
         prepared = link[link.find("//") + 2:]
         prepared = prepared[prepared.find("/") + 1:]
-        prepared = split_pattern(prepared)
+        prepared = split_endpoints(prepared)
 
         for ignore_sample in ignore_list:
             for endpoint, forbidden in zip(prepared, ignore_sample):
@@ -207,10 +207,10 @@ def process_link(page_url: str, template: str, pattern: str,
     return link
 
 
-def split_pattern(url: str):
-    """Splits ignore pattern.
+def split_endpoints(url: str):
+    """Splits endpoints by slashes.
 
-    '/login' -> ['login]
+    '/login' -> ['login']
     /.../async/' -> ['...', 'async']
     """
 
@@ -279,7 +279,7 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
         ignore_list = params.get("ignore_list", None)
 
     if ignore_list:
-        ignore_list = [split_pattern(pattern) for pattern in ignore_list]
+        ignore_list = [split_endpoints(pattern) for pattern in ignore_list]
 
     while pages_to_scan:
         url = pages_to_scan.popleft()
@@ -381,18 +381,18 @@ def build_tree(url: str, found_links: list):
     }
 
 
-def write_report(url: str, name="", **fields):
+def write_report(url: str, postfix="", **fields):
     """Writes a JSON with custom fields."""
 
     pattern = get_pattern(url, full=True)
     pattern = pattern[:pattern.rfind(".")]
 
-    if name.startswith("samples/"):
+    if postfix.startswith("samples/"):
         file_name = "samples/" + pattern + ".json"
-    elif not name:
+    elif not postfix:
         file_name = "reports/" + pattern + ".json"
     else:
-        file_name = "reports/" + pattern + "_" + name + ".json"
+        file_name = "reports/" + pattern + "_" + postfix + ".json"
 
     with open(file_name, "w") as file:
         report = dict(url=url, **fields)

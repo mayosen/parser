@@ -69,15 +69,16 @@ def test_scan_page(samples: list):
         print("successfully tested.")
 
 
-def test_report(url: str, postfix: str, total_time: float, mean_time: float,
-                scanned: int, found: int, endpoints: list):
+def test_report(url: str, postfix: str, times: list,
+                scanned: list, found: list):
+    total_time = times.pop()
     write_report(
         url, postfix,
-        total_time=total_time,
-        mean_time=mean_time,
-        scanned=scanned,
-        found=found,
-        endpoints=endpoints,
+        total_time=round(total_time, 2),
+        mean_time=round(mean(times), 2),
+        scanned=len(scanned),
+        found=len(found),
+        endpoints=found,
     )
 
 
@@ -86,21 +87,15 @@ def test_sync(url: str):
 
     print(f"scanning with time limit:", url)
     times, scanned, found = run_for_pages(url, time_limit=5)
-    total = times.pop()
-    test_report(url, "t_time_async", round(total, 2), round(mean(times), 2),
-                len(scanned), len(found), found)
+    test_report(url, "t_time_sync", times, scanned, found)
 
     print(f"scanning with scanned limit:", url)
     times, scanned, found = run_for_pages(url, scanned_limit=15)
-    total = times.pop()
-    test_report(url, "t_scanned_async", round(total, 2), round(mean(times), 2),
-                len(scanned), len(found), found)
+    test_report(url, "t_scanned_sync", times, scanned, found)
 
     print(f"scanning with found limit:", url)
     times, scanned, found = run_for_pages(url, found_limit=250)
-    total = times.pop()
-    test_report(url, "t_found_async", round(total, 2), round(mean(times), 2),
-                len(scanned), len(found), found)
+    test_report(url, "t_found_sync", times, scanned, found)
 
 
 def test_async(url: str):
@@ -109,21 +104,15 @@ def test_async(url: str):
 
     print(f"scanning with time limit:", url)
     times, scanned, found = asyncio.run(run_async(url, time_limit=5))
-    total = times.pop()
-    test_report(url, "t_time_sync", round(total, 2), round(mean(times), 2),
-                len(scanned), len(found), found)
+    test_report(url, "t_time_async", times, scanned, found)
 
     print(f"scanning with scanned limit:", url)
     times, scanned, found = asyncio.run(run_async(url, scanned_limit=15))
-    total = times.pop()
-    test_report(url, "t_scanned_sync", round(total, 2), round(mean(times), 2),
-                len(scanned), len(found), found)
+    test_report(url, "t_scanned_async", times, scanned, found)
 
     print(f"scanning with found limit:", url)
     times, scanned, found = asyncio.run(run_async(url, found_limit=250))
-    total = times.pop()
-    test_report(url, "t_found_sync", round(total, 2), round(mean(times), 2),
-                len(scanned), len(found), found)
+    test_report(url, "t_found_async", times, scanned, found)
 
 
 if __name__ == "__main__":
