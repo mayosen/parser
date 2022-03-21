@@ -19,12 +19,15 @@ async def request_and_scan_page(session: aiohttp.ClientSession,
         page = await response.text()
 
     template = get_template(url)
+    # TODO: Outdated version
     clean_links, _ = search_for_hrefs(template, page, subdomains, nesting_limit)
     return set(clean_links)
 
 
 async def run_for_pages(first_url: str, subdomains=True, nesting_limit=0,
                         time_limit=0, scanned_limit=0, found_limit=0):
+    # TODO: Outdated version
+
     pages_to_scan = asyncio.Queue()
     pages_to_scan.put_nowait(first_url)
 

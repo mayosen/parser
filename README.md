@@ -77,9 +77,9 @@ The following code:
 site = "https://www.google.com/"
 
 _, scanned, found = run_for_pages(site, nesting_limit=3, scanned_limit=2)
-		
+
 tree = build_tree(site, found)
-		
+
 write_report(
 	site,
 	scanned=len(scanned),
