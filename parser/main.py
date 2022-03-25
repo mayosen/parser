@@ -1,5 +1,5 @@
 import requests
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectionError
 import json
 from time import time
 from random import choice
@@ -268,9 +268,9 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
     pages_to_scan.append(first_url)
     pages_scanned = set()
     pages_found = set()
+
     times = []
     func_time = time()
-    total_time = 0.0
 
     if params:
         other_domains = params.get("other_domains", True)
@@ -285,14 +285,14 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
 
     while pages_to_scan:
         url = pages_to_scan.popleft()
-
         if url in pages_scanned:
             continue
 
         scan_time = time()
+
         try:
             links, _ = scan_page(url, other_domains, nesting_limit, ignore_list)
-        except HTTPError as error:
+        except (HTTPError, ConnectionError) as error:
             print(f"exception: {error}")
             continue
 
@@ -313,14 +313,15 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
             print("\nreached found pages limit.")
             break
 
-        total_time = time() - func_time
-
+    total_time = time() - func_time
     performance = performance_report(total_time, times)
     print("\ndone by", performance["total"], "secs.")
     if "mean" in performance:
         print("\nmean time per page:", performance["mean"], "secs.")
         print("max time per page:", performance["max"], "secs.")
         print("min time per page:", performance["min"], "secs.")
+        print("\nscanned:", len(pages_scanned))
+        print("found:", len(pages_found))
 
     return performance, pages_scanned, sorted(pages_found)
 
