@@ -1,51 +1,57 @@
 # Web-parser
 A script for searching all the endpoints of the site and building its map.
 
-There are `main.py` module with necessary functions, `test.py` module to test performance and the correctness of scanning, and experimental `asyncho.py` module to request page asynchronously. 
+There are `main.py` module with necessary functions, `test.py` module to test performance 
+and the correctness of scanning, and experimental `asyncho.py` module to request page 
+asynchronously (currently not supported, but in plans). 
 
-### To compare
+## To compare
 To compare script in searching of endpoints you can use https://www.xml-sitemaps.com/.
 
-### Searching parameters
+## Searching parameters
 1. `other_domains: bool`
 
 This parameter filters links not containing required domain.
 ```python
-initial_link = "https://cloud.google.com/"
-link = "https://console.cloud.google.com/"
-# If `True` will be passed, if `False` will be passed yet.
-link = "https://careers.google.com/cloud"
-# If `True` will be passed, if `False` will be skipped.
+site = "https://cloud.google.com/"
+
+other_domains = True
+link = "https://console.cloud.google.com/"  # Will be passed
+link = "https://careers.google.com/cloud"  # Will be passed
+
+other_domains = False
+link = "https://console.cloud.google.com/"  # Will be passed
+link = "https://careers.google.com/cloud"  # Will be skipped
 ```
 
 2. `nesting_limit: int` 
 
-Limit on link nesting counted by slashes.
+A limit on link nesting counted by slashes.
 ```python
 nesting_limit = 2
 link = "https://dvmn.org/modules/website-layout-for-pydev/"
-# Will be passed.
+# Will be passed
 link = "https://dvmn.org/modules/website-layout-for-pydev/current-lesson/"
-# Will be skipped.
+# Will be skipped
 ```
 
 3. `time_limit: int or float`
 
-A limit on runtime of script. 
+A limit on runtime of the script. 
 
 4. `scanned_limit: int`
 
-A limit on number scanned (requested) pages.
+A limit on number of scanned (requested) pages.
 
 5. `found_limit: int`
 
-A limit on total number of found unique pages.
+A limit on total number of unique pages found.
 
 6. `ignore_list: list`
 
 A list with forbidden endpoints.
 ```python
-initial_link = "https://dvmn.org/modules/"
+site = "https://dvmn.org/modules/"
 ignore_list = [
 	"/signin/", "/encyclopedia/", "/.../async-python/",
 ]
@@ -71,7 +77,7 @@ params = dict(
 times, scanned, found = run_for_pages(site, params=params)
 ``` 
 
-### Example
+## Example
 The following code:
 ```python
 site = "https://www.google.com/"
@@ -88,47 +94,54 @@ write_report(
 	tree=tree,
 )
 ```	
-makes the following json file:
+makes the following `www.google.json` file:
 ```yaml
 {
     "url": "https://www.google.com/",
     "scanned": 2,
-    "found": 12,
+    "found": 13,
     "endpoints": [
         "https://accounts.google.com/ServiceLogin",
-        "https://accounts.google.com/TOS",
+        "https://google.com/search/howsearchworks/",
         "https://mail.google.com/mail/",
         "https://policies.google.com/privacy",
         "https://policies.google.com/terms",
-        "https://support.google.com/accounts",
+        "https://support.google.com/",
         "https://support.google.com/websearch/",
         "https://www.google.com/",
         "https://www.google.com/advanced_search",
         "https://www.google.com/history/optout",
+        "https://www.google.com/intl/ru_ru/ads/",
         "https://www.google.com/preferences",
         "https://www.google.com/services/"
     ],
     "tree": {
         "google.com": {
-            "accounts": {
-                "ServiceLogin": null,
-                "TOS": null
+            "accounts:domain": {
+                "ServiceLogin": null
             },
-            "mail": {
+            "search": {
+                "howsearchworks": null
+            },
+            "mail:domain": {
                 "mail": null
             },
-            "policies": {
+            "policies:domain": {
                 "privacy": null,
                 "terms": null
             },
-            "support": {
-                "accounts": null,
+            "support:domain": {
                 "websearch": null
             },
-            "www": {
+            "www:domain": {
                 "advanced_search": null,
                 "history": {
                     "optout": null
+                },
+                "intl": {
+                    "ru_ru": {
+                        "ads": null
+                    }
                 },
                 "preferences": null,
                 "services": null
