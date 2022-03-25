@@ -3,49 +3,53 @@ A script for searching all the endpoints of the site and building its map.
 
 There are `main.py` module with necessary functions, `test.py` module to test performance and the correctness of scanning, and experimental `asyncho.py` module to request page asynchronously. 
 
-### To compare
+## To compare
 To compare script in searching of endpoints you can use https://www.xml-sitemaps.com/.
 
-### Searching parameters
+## Searching parameters
 1. `other_domains: bool`
 
 This parameter filters links not containing required domain.
 ```python
-initial_link = "https://cloud.google.com/"
-link = "https://console.cloud.google.com/"
-# If `True` will be passed, if `False` will be passed yet.
-link = "https://careers.google.com/cloud"
-# If `True` will be passed, if `False` will be skipped.
+site = "https://cloud.google.com/"
+
+other_domains = True
+link = "https://console.cloud.google.com/"  # Will be passed
+link = "https://careers.google.com/cloud"  # Will be passed
+
+other_domains = False
+link = "https://console.cloud.google.com/"  # Will be passed
+link = "https://careers.google.com/cloud"  # Will be skipped
 ```
 
 2. `nesting_limit: int` 
 
-Limit on link nesting counted by slashes.
+A limit on link nesting counted by slashes.
 ```python
 nesting_limit = 2
 link = "https://dvmn.org/modules/website-layout-for-pydev/"
-# Will be passed.
+# Will be passed
 link = "https://dvmn.org/modules/website-layout-for-pydev/current-lesson/"
-# Will be skipped.
+# Will be skipped
 ```
 
 3. `time_limit: int or float`
 
-A limit on runtime of script. 
+A limit on runtime of the script. 
 
 4. `scanned_limit: int`
 
-A limit on number scanned (requested) pages.
+A limit on number of scanned (requested) pages.
 
 5. `found_limit: int`
 
-A limit on total number of found unique pages.
+A limit on total number of unique pages found.
 
 6. `ignore_list: list`
 
 A list with forbidden endpoints.
 ```python
-initial_link = "https://dvmn.org/modules/"
+site = "https://dvmn.org/modules/"
 ignore_list = [
 	"/signin/", "/encyclopedia/", "/.../async-python/",
 ]
@@ -71,7 +75,7 @@ params = dict(
 times, scanned, found = run_for_pages(site, params=params)
 ``` 
 
-### Example
+## Example
 The following code:
 ```python
 site = "https://www.google.com/"
