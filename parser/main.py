@@ -316,12 +316,14 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
     total_time = time() - func_time
     performance = performance_report(total_time, times)
     print("\ndone by", performance["total"], "secs.")
+
     if "mean" in performance:
         print("\nmean time per page:", performance["mean"], "secs.")
         print("max time per page:", performance["max"], "secs.")
         print("min time per page:", performance["min"], "secs.")
-        print("\nscanned:", len(pages_scanned))
-        print("found:", len(pages_found))
+
+    print("\nscanned:", len(pages_scanned))
+    print("found:", len(pages_found))
 
     return performance, pages_scanned, sorted(pages_found)
 
