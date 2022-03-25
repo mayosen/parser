@@ -1,7 +1,9 @@
 # Web-parser
 A script for searching all the endpoints of the site and building its map.
 
-There are `main.py` module with necessary functions, `test.py` module to test performance and the correctness of scanning, and experimental `asyncho.py` module to request page asynchronously. 
+There are `main.py` module with necessary functions, `test.py` module to test performance 
+and the correctness of scanning, and experimental `asyncho.py` module to request page 
+asynchronously (currently not supported, but in plans). 
 
 ## To compare
 To compare script in searching of endpoints you can use https://www.xml-sitemaps.com/.
@@ -92,47 +94,54 @@ write_report(
 	tree=tree,
 )
 ```	
-makes the following json file:
+makes the following `www.google.json` file:
 ```yaml
 {
     "url": "https://www.google.com/",
     "scanned": 2,
-    "found": 12,
+    "found": 13,
     "endpoints": [
         "https://accounts.google.com/ServiceLogin",
-        "https://accounts.google.com/TOS",
+        "https://google.com/search/howsearchworks/",
         "https://mail.google.com/mail/",
         "https://policies.google.com/privacy",
         "https://policies.google.com/terms",
-        "https://support.google.com/accounts",
+        "https://support.google.com/",
         "https://support.google.com/websearch/",
         "https://www.google.com/",
         "https://www.google.com/advanced_search",
         "https://www.google.com/history/optout",
+        "https://www.google.com/intl/ru_ru/ads/",
         "https://www.google.com/preferences",
         "https://www.google.com/services/"
     ],
     "tree": {
         "google.com": {
-            "accounts": {
-                "ServiceLogin": null,
-                "TOS": null
+            "accounts:domain": {
+                "ServiceLogin": null
             },
-            "mail": {
+            "search": {
+                "howsearchworks": null
+            },
+            "mail:domain": {
                 "mail": null
             },
-            "policies": {
+            "policies:domain": {
                 "privacy": null,
                 "terms": null
             },
-            "support": {
-                "accounts": null,
+            "support:domain": {
                 "websearch": null
             },
-            "www": {
+            "www:domain": {
                 "advanced_search": null,
                 "history": {
                     "optout": null
+                },
+                "intl": {
+                    "ru_ru": {
+                        "ads": null
+                    }
                 },
                 "preferences": null,
                 "services": null
