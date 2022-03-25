@@ -10,17 +10,17 @@ from bs4 import BeautifulSoup
 
 USER_AGENTS = [
     ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"),
+     "(KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"),
     ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"),
+     "(KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"),
     ("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) "
-        "Gecko/20100101 Firefox/94.0"),
+     "Gecko/20100101 Firefox/94.0"),
     ("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:95.0) "
-        "Gecko/20100101 Firefox/95.0"),
+     "Gecko/20100101 Firefox/95.0"),
     ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36"),
+     "(KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36"),
     ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/96.0.4664.55 Safari/537.36"),
+     "(KHTML, like Gecko) Chrome/96.0.4664.55 Safari/537.36"),
 ]
 
 
@@ -34,12 +34,12 @@ def request_for_page(url: str):
     response.raise_for_status()
 
     if response.history:
-        url = process_redirect(response.url)
+        url = clean_tags(response.url)
 
     return url, response.text
 
 
-def process_redirect(url: str):
+def clean_tags(url: str):
     """Cleans url from tags."""
 
     if "?" in url:
@@ -48,6 +48,7 @@ def process_redirect(url: str):
         url = url[:url.rfind("#")]
     if "&" in url:
         url = url[:url.find("&")]
+
     return url
 
 
@@ -82,9 +83,9 @@ def get_pattern(url: str, full=True):
         url = url[:url.find("?")]
 
     if not full:
-        clipped = url[:url.rfind(".")]
-        if "." in clipped:
-            next_dot = clipped.rfind(".")
+        cropped = url[:url.rfind(".")]
+        if "." in cropped:
+            next_dot = cropped.rfind(".")
             url = url[next_dot + 1:]
 
     return url
@@ -99,7 +100,6 @@ def is_other_site(url: str):
     """
 
     url = url.rstrip(".html").rstrip("htm")
-
     return "." in url
 
 
@@ -141,6 +141,7 @@ def process_link(page_url: str, template: str, pattern: str,
         return None
 
     if pattern not in link:
+        # If link is relative
         if is_other_site(link):
             return None
         elif link.startswith("../"):
@@ -154,30 +155,30 @@ def process_link(page_url: str, template: str, pattern: str,
         elif link.startswith("/"):
             link = template + link
         elif "://" in link:
-            # Case when link opens desktop app
-            # example: 'tg://resolve' - Telegram
+            # When link opens desktop app
+            # Example: 'tg://resolve' - Telegram
             return None
         elif not link:
             return None
         else:
             link = template + "/" + link
     elif link.startswith("//"):
-        if "." in link[link.find(pattern) + len(pattern):]:
-            return None
         protocol = template[:template.find("/") + 2]
         link = protocol + link[2:]
     elif not link.startswith(("https://", "http://")):
         return None
     elif not link.startswith(template):
+        # Filter for similar domains
+        # Example: 'google.com' and 'www.thinkwithgoogle.com'
         pattern_position = link.find(pattern)
         symbol = link[pattern_position - 1]
-        if not (symbol == "/" or symbol == "."):
+        if symbol not in ("/", "."):
             return None
 
-    # Checking is required domain hosted on higher level domain
-    # example: 'ratatape.com' and `ratatype.com.br'
-    # or if topdomain is larger when required
-    # example: 'github.com' and 'github.community'
+    # Checking if required domain hosted on higher level domain
+    # Example: 'ratatype.com' and 'ratatype.com.br'
+    # or if domain is similar to required but longer
+    # Example: 'github.com' and 'github.community'
     after_domain = link[link.find(pattern) + len(pattern):]
     if after_domain and after_domain[0] != "/":
         return None
@@ -240,19 +241,21 @@ def search_for_hrefs(page_url: str, template: str, page: str,
     return set(clean_links), set(dirt_links)
 
 
-def scan_page(start_url: str, other_domains=True,
-              nesting_limit=0, ignore_list=None):
+def scan_page(start_url: str, other_domains=True, nesting_limit=0, ignore_list=None):
     """Finds urls on the page."""
 
     print("scanning:", start_url)
     final_url, page = request_for_page(start_url)
+
     if start_url != final_url:
         print("redirected:", final_url)
     if get_pattern(start_url, False) != get_pattern(final_url, False):
         return set(), set()
+
     template = get_template(final_url)
     clean_links, dirt_links = search_for_hrefs(
-        final_url, template, page, other_domains, nesting_limit, ignore_list)
+        final_url, template, page, other_domains, nesting_limit, ignore_list
+    )
     return clean_links, dirt_links
 
 
@@ -263,12 +266,11 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
 
     pages_to_scan = deque()
     pages_to_scan.append(first_url)
-
     pages_scanned = set()
     pages_found = set()
-
     times = []
     func_time = time()
+    total_time = 0.0
 
     if params:
         other_domains = params.get("other_domains", True)
@@ -279,7 +281,7 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
         ignore_list = params.get("ignore_list", None)
 
     if ignore_list:
-        ignore_list = [split_endpoints(pattern) for pattern in ignore_list]
+        ignore_list = [split_endpoints(ignore_sample) for ignore_sample in ignore_list]
 
     while pages_to_scan:
         url = pages_to_scan.popleft()
@@ -311,17 +313,16 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
             print("\nreached found pages limit.")
             break
 
-    if times:
-        print(f"\ndone by {time() - func_time:.2f} secs.\n")
-        print(f"scanned: {len(pages_scanned)}")
-        print(f"found: {len(pages_found)}\n")
-        print(f"mean time per page: {mean(times):.2f}")
-        print(f"max time per page: {max(times):.2f}")
-        print(f"min time per page: {min(times):.2f}\n")
+        total_time = time() - func_time
 
-        times.append(time() - func_time)
+    performance = performance_report(total_time, times)
+    print("\ndone by", performance["total"], "secs.")
+    if "mean" in performance:
+        print("\nmean time per page:", performance["mean"], "secs.")
+        print("max time per page:", performance["max"], "secs.")
+        print("min time per page:", performance["min"], "secs.")
 
-    return times, pages_scanned, sorted(pages_found)
+    return performance, pages_scanned, sorted(pages_found)
 
 
 def merge_branch(tree: dict, branch: list):
@@ -353,32 +354,44 @@ def build_tree(url: str, found_links: list):
     """
 
     links = []
-
     for link in found_links:
         links.append(link[link.find("//") + 2:].rstrip("/"))
 
     sequences = []
-
     for link in links:
         if "/" in link:
-            domains = link.split("/", maxsplit=1)
-            dots = domains[0].split(".")[:-2][::-1]
-            slashes = domains[1].split("/")
-            items = dots + slashes
+            domains, endpoints = link.split("/", maxsplit=1)
+            endpoints = endpoints.split("/")
         else:
-            items = link.split(".")[:-2][::-1]
+            domains = link
+            endpoints = []
+
+        domains = domains.split(".")[:-2][::-1]
+        domains = [domain + ":domain" for domain in domains]
+        items = domains + endpoints
 
         if items:
             sequences.append(items)
 
     tree = {}
-
     for group in sequences:
         tree = merge_branch(tree, group)
 
     return {
         get_pattern(url, full=False): tree,
     }
+
+
+def performance_report(total_time: float, times: list):
+    report = {
+        "total": round(total_time, 2)
+    }
+    if times:
+        report["mean"] = round(mean(times), 2)
+        report["max"] = round(max(times), 2)
+        report["min"] = round(min(times), 2)
+
+    return report
 
 
 def write_report(url: str, postfix="", **fields):
@@ -414,7 +427,7 @@ examples = [
 ]
 
 if __name__ == "__main__":
-    site = "https://dvmn.org/modules/"
+    site = "https://www.google.com/"
 
     params = dict(
         other_domains=True,
@@ -422,19 +435,17 @@ if __name__ == "__main__":
         time_limit=0,
         scanned_limit=0,
         found_limit=0,
-        ignore_list=[
-            "/signin/", "/encyclopedia/", "/.../async-python/",
-        ],
     )
 
-    _, scanned, found = run_for_pages(site, params=params)
+    times, scanned, found = run_for_pages(site, params=params)
 
-    # tree = build_tree(site, found)
+    tree = build_tree(site, found)
 
     write_report(
         site,
         scanned=len(scanned),
         found=len(found),
+        times=times,
         endpoints=found,
-        # tree=tree,
+        tree=tree,
     )
