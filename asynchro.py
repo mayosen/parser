@@ -8,15 +8,15 @@ import asyncio
 import aiohttp
 from time import time
 from statistics import mean
-from random import choice
 
-from main import search_for_hrefs, get_template, write_report, USER_AGENTS
+from main import search_for_hrefs, get_template, write_report
+from utils import get_user_agent
 
 
 async def request_and_scan_page(session: aiohttp.ClientSession,
                                 url: str, subdomains=True, nesting_limit=0):
     headers = {
-        "User-Agent": choice(USER_AGENTS)
+        "User-Agent": get_user_agent()
     }
 
     async with session.get(url, headers=headers) as response:

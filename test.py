@@ -2,7 +2,7 @@ import json
 import asyncio
 from os import listdir
 
-from main import scan_page, write_report, run_for_pages, examples
+from main import scan_page, write_report, run_for_pages
 from asynchro import run_for_pages as run_async
 
 
