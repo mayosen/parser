@@ -1,34 +1,23 @@
+import sys
+import json
+from collections import deque
+from time import time
+from statistics import mean
+
 import requests
 from requests.exceptions import HTTPError, ConnectionError
-import json
-from time import time
-from random import choice
-from collections import deque
-from statistics import mean
 from bs4 import BeautifulSoup
 
-
-USER_AGENTS = [
-    ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-     "(KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"),
-    ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-     "(KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"),
-    ("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) "
-     "Gecko/20100101 Firefox/94.0"),
-    ("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:95.0) "
-     "Gecko/20100101 Firefox/95.0"),
-    ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-     "(KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36"),
-    ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-     "(KHTML, like Gecko) Chrome/96.0.4664.55 Safari/537.36"),
-]
+import utils
 
 
 def request_for_page(url: str):
-    """Requests for page taking into account bad requests and redirects."""
+    """
+    Requests for a page.
+    """
 
     headers = {
-        "User-Agent": choice(USER_AGENTS)
+        "User-Agent": utils.get_user_agent()
     }
     response = requests.get(url, headers=headers)
     response.raise_for_status()
@@ -40,7 +29,9 @@ def request_for_page(url: str):
 
 
 def clean_tags(url: str):
-    """Cleans url from tags."""
+    """
+    Cleans url from tags.
+    """
 
     if "?" in url:
         url = url[:url.find("?")]
@@ -53,9 +44,10 @@ def clean_tags(url: str):
 
 
 def get_template(url: str):
-    """Returns a template for creating links by adding endpoints.
+    """
+    Returns a template for creating links by adding endpoints.
 
-    'https://gljewelry.com/about/' -> 'https://gljewelry.com'
+    Example: 'https://gljewelry.com/about/' -> 'https://gljewelry.com'
     """
 
     first_dot = url.find(".")
@@ -66,22 +58,20 @@ def get_template(url: str):
 
 
 def get_pattern(url: str, full=True):
-    """Returns a top- and a second-level domains or domains of all levels.
+    """
+    Returns all level domains or a pair of top- and second-level domains.
 
-    'https://www.google.ru/services/' -> 'www.google.ru' or 'google.ru'
+    Example: 'https://www.google.ru/services/' -> 'www.google.ru' or 'google.ru'
     """
 
     if url.endswith((".html", ".htm")):
         url = url[:url.rfind(".")]
-
     url = url[url.find("//") + 2:]
 
     if "/" in url:
         url = url[:url.find("/")]
-
     if "?" in url:
         url = url[:url.find("?")]
-
     if not full:
         cropped = url[:url.rfind(".")]
         if "." in cropped:
@@ -92,8 +82,10 @@ def get_pattern(url: str, full=True):
 
 
 def is_other_site(url: str):
-    """Checks if href like '/link' is other site.
+    """
+    Checks if link refers to other site.
 
+    Examples:
     '/catalog/43' -> False
     '/catalog/ring.html' -> False
     '/wikipedia.org/' -> True
@@ -104,8 +96,10 @@ def is_other_site(url: str):
 
 
 def has_subdomains(url: str):
-    """Checks if site has subdomains.
+    """
+    Checks if site has subdomains.
 
+    Examples:
     'https://google.com/' -> False
     'https://www.google.com/' -> True
     """
@@ -113,16 +107,17 @@ def has_subdomains(url: str):
     url = url[url.find("/") + 2:]
     if "/" in url:
         url = url[:url.find("/")]
-
     subdomains = url.count(".") - 1
+
     return subdomains > 0
 
 
 def count_nesting(url: str):
-    """Returns a number of nesting by '/' on sites."""
+    """
+    Returns a value of site endpoint nesting, counted by '/'.
+    """
 
     url = url[url.find("/") + 2:]
-
     slashes = url.count("/")
     if not url[url.rfind("/") + 1:]:
         slashes -= 1
@@ -132,11 +127,12 @@ def count_nesting(url: str):
 
 def process_link(page_url: str, template: str, pattern: str,
                  link: str, nesting_limit=0, ignore_list=None):
-    """Returns cleaned of tags link to the site or None if link is invalid."""
+    """
+    Returns cleaned and absolute link or None if link is invalid.
+    """
 
     if "?" in link:
         link = link[:link.find("?")]
-
     if link.startswith(("tel:", "mailto:")):
         return None
 
@@ -185,16 +181,12 @@ def process_link(page_url: str, template: str, pattern: str,
 
     if "#" in link:
         link = link[:link.rfind("#")]
-
     if "&" in link:
         link = link[:link.find("&")]
-
     if link == template:
         link += "/"
-
     if nesting_limit and count_nesting(link) > nesting_limit:
         return None
-
     if ignore_list:
         prepared = link[link.find("//") + 2:]
         prepared = prepared[prepared.find("/") + 1:]
@@ -209,20 +201,25 @@ def process_link(page_url: str, template: str, pattern: str,
 
 
 def split_endpoints(url: str):
-    """Splits endpoints by slashes.
+    """
+    Splits endpoints by slashes.
 
+    Example:
     '/login' -> ['login']
-    /.../async/' -> ['...', 'async']
+    '/.../async/' -> ['...', 'async']
     """
 
     temp_list = url.split("/")
     filtered = list(filter(lambda item: item, temp_list))
+
     return filtered
 
 
 def search_for_hrefs(page_url: str, template: str, page: str,
                      other_domains=True, nesting_limit=0, ignore_list=None):
-    """Parses html page for unique <a href> tags."""
+    """
+    Parses html page for unique links.
+    """
 
     parsed_soup = BeautifulSoup(page, "lxml")
     links = parsed_soup.find_all("a", href=True)
@@ -231,10 +228,7 @@ def search_for_hrefs(page_url: str, template: str, page: str,
     pattern = get_pattern(template, not other_domains)
 
     for link in dirt_links:
-        processed_link = process_link(
-            page_url, template, pattern, link, nesting_limit, ignore_list
-        )
-
+        processed_link = process_link(page_url, template, pattern, link, nesting_limit, ignore_list)
         if processed_link:
             clean_links.append(processed_link)
 
@@ -242,7 +236,9 @@ def search_for_hrefs(page_url: str, template: str, page: str,
 
 
 def scan_page(start_url: str, other_domains=True, nesting_limit=0, ignore_list=None):
-    """Finds urls on the page."""
+    """
+    Finds links on the page.
+    """
 
     print("scanning:", start_url)
     final_url, page = request_for_page(start_url)
@@ -256,19 +252,21 @@ def scan_page(start_url: str, other_domains=True, nesting_limit=0, ignore_list=N
     clean_links, dirt_links = search_for_hrefs(
         final_url, template, page, other_domains, nesting_limit, ignore_list
     )
+
     return clean_links, dirt_links
 
 
 def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
                   time_limit=0, scanned_limit=0, found_limit=0,
                   ignore_list=None, params=None):
-    """Makes a pass through all the links found."""
+    """
+    Makes a pass through all the pages found and scans it.
+    """
 
     pages_to_scan = deque()
     pages_to_scan.append(first_url)
     pages_scanned = set()
     pages_found = set()
-
     times = []
     func_time = time()
 
@@ -279,7 +277,6 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
         scanned_limit = params.get("scanned_limit", 0)
         found_limit = params.get("found_limit", 0)
         ignore_list = params.get("ignore_list", None)
-
     if ignore_list:
         ignore_list = [split_endpoints(ignore_sample) for ignore_sample in ignore_list]
 
@@ -289,7 +286,6 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
             continue
 
         scan_time = time()
-
         try:
             links, _ = scan_page(url, other_domains, nesting_limit, ignore_list)
         except (HTTPError, ConnectionError) as error:
@@ -300,7 +296,6 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
         pages_scanned.add(url)
         unique_links = links - pages_scanned - set(pages_to_scan)
         pages_to_scan.extend(unique_links)
-
         times.append(time() - scan_time)
 
         if time_limit and time() - func_time >= time_limit:
@@ -327,9 +322,8 @@ def run_for_pages(first_url: str, other_domains=True, nesting_limit=0,
 
 
 def merge_branch(tree: dict, branch: list):
-    """Merges branch as list into dictionary.
-
-    Every element in branch is a key.
+    """
+    Merges branch as a list into dictionary.
     """
 
     if len(branch) == 1:
@@ -349,16 +343,13 @@ def merge_branch(tree: dict, branch: list):
 
 
 def build_tree(url: str, found_links: list):
-    """Builds tree-structure from found links.
-
-    Subdomains and endpoints are counted equally.
+    """
+    Builds tree-structure from found links.
     """
 
-    links = []
-    for link in found_links:
-        links.append(link[link.find("//") + 2:].rstrip("/"))
+    links = [link[link.find("//") + 2:].rstrip("/") for link in found_links]
+    branches = []
 
-    sequences = []
     for link in links:
         if "/" in link:
             domains, endpoints = link.split("/", maxsplit=1)
@@ -372,11 +363,12 @@ def build_tree(url: str, found_links: list):
         items = domains + endpoints
 
         if items:
-            sequences.append(items)
+            branches.append(items)
 
     tree = {}
-    for group in sequences:
-        tree = merge_branch(tree, group)
+
+    for branch in branches:
+        tree = merge_branch(tree, branch)
 
     return {
         get_pattern(url, full=False): tree,
@@ -384,6 +376,10 @@ def build_tree(url: str, found_links: list):
 
 
 def performance_report(total_time: float, times: list):
+    """
+    Makes performance report.
+    """
+
     report = {
         "total": round(total_time, 2)
     }
@@ -396,7 +392,9 @@ def performance_report(total_time: float, times: list):
 
 
 def write_report(url: str, postfix="", **fields):
-    """Writes a JSON with custom fields."""
+    """
+    Writes a JSON with custom fields.
+    """
 
     pattern = get_pattern(url, full=True)
     pattern = pattern[:pattern.rfind(".")]
@@ -413,30 +411,15 @@ def write_report(url: str, postfix="", **fields):
         json.dump(report, file, indent=4)
 
 
-examples = [
-    "https://edu.avosetrov.ru/",
-    "http://www.avosetrov.ru/",
-    "https://dvmn.org/modules/",
-    "https://gljewelry.com/about/",
-    "https://www.google.com/",
-    "https://cloud.google.com/",
-    "https://dev.vk.com/",
-    "https://www.coursera.org/",
-    "https://www.ratatype.com/",
-    "https://slack.com/",
-    "https://github.com/",
-]
-
 if __name__ == "__main__":
-    site = "https://www.google.com/"
-
-    params = dict(
-        other_domains=True,
-        nesting_limit=3,
-        time_limit=0,
-        scanned_limit=0,
-        found_limit=0,
-    )
+    if len(sys.argv) > 1:
+        site, params = utils.pass_args()
+    else:
+        site = "https://www.google.com/"
+        # params = utils.load_config()
+        params = dict(
+            scanned_limit=5
+        )
 
     times, scanned, found = run_for_pages(site, params=params)
 
