@@ -81,11 +81,11 @@ makes the following `www.google.json` file:
 ```
 
 ## Searching Parameters
-You can set arguments manually in the code, load them from the config (`load config`) or 
-pass them through command line arguments.
+You can set arguments manually in the code, load them from the config or pass them through 
+command line.
 
-1. `other_domains: bool`
-Command-line: `-o`, `--others`
+1. `other_domains: bool`  
+Command-line: `-o`, `--others`  
 Any passed string except "false" is considered as `True`.
 
 This parameter filters links not containing required domain.
@@ -101,7 +101,7 @@ link = "https://console.cloud.google.com/"  # Will be passed
 link = "https://careers.google.com/cloud"  # Will be skipped
 ```
 
-2. `nesting_limit: int` 
+2. `nesting_limit: int`  
 Command-line: `-n`, `--nesting`
 
 A limit on link nesting counted by slashes.
@@ -113,22 +113,22 @@ link = "https://dvmn.org/modules/website-layout-for-pydev/current-lesson/"
 # Will be skipped
 ```
 
-3. `time_limit: int`
+3. `time_limit: int`  
 Command-line: `-t`, `--time`
 
 A limit on runtime of the script. 
 
-4. `scanned_limit: int`
+4. `scanned_limit: int`  
 Command-line: `-s`, `--scanned`
 
 A limit on number of scanned (requested) pages.
 
-5. `found_limit: int`
+5. `found_limit: int`  
 Command-line: `-f`, `--found`
 
 A limit on total number of unique pages found.
 
-6. `ignore_list: list`
+6. `ignore_list: list`  
 Command-line: `-i`, `--ignore`
 
 A list with forbidden endpoints.
@@ -159,7 +159,7 @@ params = dict(
 times, scanned, found = run_for_pages(site, params=params)
 ``` 
 
-- Loading config. Config is a JSON with optional parameters for scanning.
+- Loading config. Config is a JSON with optional parameters for scanning.  
 Command-line: `-c`, `--config`  
 Manually:
 ```python
