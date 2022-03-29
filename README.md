@@ -86,6 +86,7 @@ pass them through command line arguments.
 
 1. `other_domains: bool`
 Command-line: `-o`, `--others`
+Any passed string except "false" is considered as `True`.
 
 This parameter filters links not containing required domain.
 ```python
