@@ -1,7 +1,7 @@
 # Web-parser
 A script for searching all the endpoints of the site and building its map.
 
-There are `parser.py` module with necessary functions, `test.py` module to test performance 
+There are `main.py` module with necessary functions, `test.py` module to test performance 
 and the correctness of scanning, and experimental `asyncho.py` module to request page 
 asynchronously (currently not supported, but in plans). 
 
@@ -93,11 +93,11 @@ site = "https://cloud.google.com/"
 
 other_domains = True
 link = "https://console.cloud.google.com/"  	# Will be passed
-link = "https://careers.google.com/cloud"  		# Will be passed
+link = "https://careers.google.com/cloud"       # Will be passed
 
 other_domains = False
 link = "https://console.cloud.google.com/"  	# Will be passed
-link = "https://careers.google.com/cloud"  		# Will be skipped
+link = "https://careers.google.com/cloud"       # Will be skipped
 ```
 
 2. `nesting_limit: int`  
@@ -138,6 +138,7 @@ site = "https://dvmn.org/modules/"
 ignore_list = [
 	"/signin/", "/encyclopedia/", "/.../async-python/",
 ]
+
 # The following links will be skipped:
 link = "https://dvmn.org/signin"
 link = "https://dvmn.org/encyclopedia/tutorial/tutorial_git/"
