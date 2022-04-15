@@ -91,7 +91,7 @@ def is_other_site(url: str):
     '/wikipedia.org/' -> True
     """
 
-    url = url.rstrip(".html").rstrip("htm")
+    url = url.removesuffix(".html").removesuffix(".htm")
     return "." in url
 
 
@@ -143,7 +143,7 @@ def process_link(page_url: str, template: str, pattern: str,
         elif link.startswith("../"):
             page_url = page_url.rstrip("/")
             page_url = page_url[:page_url.rfind("/")]
-            link = page_url + link.lstrip("..")
+            link = page_url + link.removeprefix("..")
         elif link.startswith("#"):
             link = template + "/"
         elif link == "/":
