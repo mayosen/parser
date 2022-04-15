@@ -1,7 +1,7 @@
 # Web-parser
 A script for searching all the endpoints of the site and building its map.
 
-There are `main.py` module with necessary functions, `test.py` module to test performance 
+There are `parser.py` module with necessary functions, `test.py` module to test performance 
 and the correctness of scanning, and experimental `asyncho.py` module to request page 
 asynchronously (currently not supported, but in plans). 
 
@@ -14,7 +14,6 @@ The following code:
 site = "https://www.google.com/"
 _, scanned, found = run_for_pages(site, nesting_limit=3, scanned_limit=2)
 tree = build_tree(site, found)
-
 write_report(
 	site,
 	scanned=len(scanned),
@@ -93,12 +92,12 @@ This parameter filters links not containing required domain.
 site = "https://cloud.google.com/"
 
 other_domains = True
-link = "https://console.cloud.google.com/"  # Will be passed
-link = "https://careers.google.com/cloud"  # Will be passed
+link = "https://console.cloud.google.com/"  	# Will be passed
+link = "https://careers.google.com/cloud"  		# Will be passed
 
 other_domains = False
-link = "https://console.cloud.google.com/"  # Will be passed
-link = "https://careers.google.com/cloud"  # Will be skipped
+link = "https://console.cloud.google.com/"  	# Will be passed
+link = "https://careers.google.com/cloud"  		# Will be skipped
 ```
 
 2. `nesting_limit: int`  
@@ -107,8 +106,10 @@ Command-line: `-n`, `--nesting`
 A limit on link nesting counted by slashes.
 ```python
 nesting_limit = 2
+
 link = "https://dvmn.org/modules/website-layout-for-pydev/"
 # Will be passed
+
 link = "https://dvmn.org/modules/website-layout-for-pydev/current-lesson/"
 # Will be skipped
 ```
