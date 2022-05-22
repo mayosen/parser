@@ -1,5 +1,6 @@
 # Web-parser
-A script for searching all the endpoints of the site and building its map.
+A script for searching all the endpoints of the site and building its map.  
+Build with Python 3.9.6.
 
 ## To Compare
 To compare the correctness of endpoints search you can use: https://www.xml-sitemaps.com/.
