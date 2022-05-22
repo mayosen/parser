@@ -90,7 +90,10 @@ def run_for_pages(
             continue
 
         pages_found.update(links)
+
         pages_scanned.add(url)
+        # FIXME: Write both final_url and first_url
+
         unique_links = links - pages_scanned - set(pages_to_scan)
         pages_to_scan.extend(unique_links)
         times.append(time() - scan_time)
