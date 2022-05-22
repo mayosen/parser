@@ -53,7 +53,7 @@ def run_for_pages(
         time_limit=0,
         scanned_limit=0,
         found_limit=0,
-        ignore_list: list = None,
+        ignore_list: list[str] = None,
         params: dict = None,
 ) -> tuple[dict, list, list]:
     """
