@@ -1,8 +1,0 @@
-{
-    "other_domains": true,
-    "nesting_limit": 3,
-    "time_limit": 0,
-    "scanned_limit": 0,
-    "found_limit": 0,
-    "ignore_list": []
-}

@@ -1,16 +1,15 @@
 # Web-parser
 A script for searching all the endpoints of the site and building its map.
 
-There are `main.py` module with necessary functions, `test.py` module to test performance 
-and the correctness of scanning, and experimental `asyncho.py` module to request page 
-asynchronously (currently not supported, but in plans). 
-
 ## To Compare
 To compare the correctness of endpoints search you can use: https://www.xml-sitemaps.com/.
 
 ## Example
 The following code:
 ```python
+from runner import run_for_pages
+from tree import build_tree
+from saver import write_report
 site = "https://www.google.com/"
 _, scanned, found = run_for_pages(site, nesting_limit=3, scanned_limit=2)
 tree = build_tree(site, found)
@@ -147,6 +146,7 @@ link = "https://dvmn.org/modules/async-python/"
 
 - Instead of passing arguments separately, you can use `params` dict.
 ```python
+from runner import run_for_pages
 site = "https://dvmn.org/modules/"
 params = dict(
     other_domains=True,
@@ -162,9 +162,4 @@ times, scanned, found = run_for_pages(site, params=params)
 ``` 
 
 - Loading config. Config is a JSON with optional parameters for scanning.  
-Command-line: `-c`, `--config`  
-Manually:
-```python
-from utils import load_config
-params = load_config("your_config.json")
-```
+Command-line: `-c`, `--config`
