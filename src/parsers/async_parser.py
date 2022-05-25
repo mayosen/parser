@@ -1,4 +1,5 @@
 import asyncio
+from pprint import pprint
 from random import choice
 from time import time
 
@@ -19,9 +20,9 @@ class AsyncParser(BaseParser):
         self.pages_found.clear()
         started = time()
         asyncio.run(self.main(first_url))
-        times = {
-            "total": time() - started,
-        }
+        times = {}
+        times["total"] = round(time() - started, 2)
+        times["mean"] = round(times["total"] / len(self.pages_scanned), 2)
         return times, list(self.pages_scanned), sorted(self.pages_found)
 
     async def main(self, first_url: str):
@@ -81,6 +82,6 @@ if __name__ == "__main__":
     url = "http://www.avosetrov.ru/"
     p = AsyncParser()
     times, _, _ = p.run(url)
-    print(f"time: {times['total']:.2f}")
+    pprint(times)
     print("scanned:", len(p.pages_scanned))
     print("found:", len(p.pages_found))

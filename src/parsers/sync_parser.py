@@ -1,5 +1,6 @@
 from collections import deque
 from random import choice
+from statistics import mean
 from time import time
 
 import requests
@@ -7,7 +8,6 @@ from requests import HTTPError
 
 from consts import USER_AGENTS
 from parsers.base_parser import BaseParser
-from saver import performance_report
 from scanner import clean_tags, get_pattern, get_template, search_for_hrefs
 
 
@@ -46,6 +46,8 @@ class SyncParser(BaseParser):
                 continue
 
             final_url = start_url if not response.history else clean_tags(response.url)
+            if final_url in self.pages_scanned:
+                continue
             self.pages_scanned.update({start_url, final_url})
 
             if start_url != final_url:
@@ -88,3 +90,19 @@ class SyncParser(BaseParser):
         print("found:", len(self.pages_found))
 
         return performance, list(self.pages_scanned), sorted(self.pages_found)
+
+
+def performance_report(total_time: float, times: list) -> dict:
+    """
+    Makes performance report.
+    """
+
+    report = {
+        "total": round(total_time, 2)
+    }
+    if times:
+        report["mean"] = round(mean(times), 2)
+        report["max"] = round(max(times), 2)
+        report["min"] = round(min(times), 2)
+
+    return report

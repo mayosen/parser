@@ -1,5 +1,4 @@
 import json
-from statistics import mean
 
 from scanner import get_pattern
 
@@ -33,19 +32,3 @@ def write_report(url: str, postfix="", **fields) -> None:
     with open(file_name, "w") as file:
         report = dict(url=url, **fields)
         json.dump(report, file, indent=4)
-
-
-def performance_report(total_time: float, times: list) -> dict:
-    """
-    Makes performance report.
-    """
-
-    report = {
-        "total": round(total_time, 2)
-    }
-    if times:
-        report["mean"] = round(mean(times), 2)
-        report["max"] = round(max(times), 2)
-        report["min"] = round(min(times), 2)
-
-    return report

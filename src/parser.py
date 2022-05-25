@@ -12,7 +12,7 @@ if __name__ == "__main__":
         site = "https://www.google.com/"
         site = "http://www.avosetrov.ru/"
         params = dict()
-        sync = True
+        sync = False
 
     if sync:
         from parsers import SyncParser
@@ -23,15 +23,16 @@ if __name__ == "__main__":
 
     times, scanned, found = parser.run(site)
 
-    # tree = {
-    #     get_pattern(site, full=False): build_tree(site, found),
-    # }
-    #
-    # write_report(
-    #     site,
-    #     scanned=len(scanned),
-    #     found=len(found),
-    #     times=times,
-    #     endpoints=found,
-    #     tree=tree,
-    # )
+    tree = {
+        get_pattern(site, full=False): build_tree(site, found),
+    }
+
+    write_report(
+        site,
+        postfix="async",
+        scanned=len(scanned),
+        found=len(found),
+        times=times,
+        endpoints=found,
+        tree=tree,
+    )
