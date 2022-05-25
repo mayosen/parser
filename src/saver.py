@@ -1,6 +1,18 @@
 import json
+from statistics import mean
 
 from scanner import get_pattern
+
+
+def load_config(file_name: str) -> dict:
+    """
+    Loads config from JSON.
+    """
+
+    with open(file_name, "r") as file:
+        config = json.load(file)
+
+    return config
 
 
 def write_report(url: str, postfix="", **fields) -> None:
@@ -23,12 +35,17 @@ def write_report(url: str, postfix="", **fields) -> None:
         json.dump(report, file, indent=4)
 
 
-def load_config(file_name: str) -> dict:
+def performance_report(total_time: float, times: list) -> dict:
     """
-    Loads config from JSON.
+    Makes performance report.
     """
 
-    with open(file_name, "r") as file:
-        config = json.load(file)
+    report = {
+        "total": round(total_time, 2)
+    }
+    if times:
+        report["mean"] = round(mean(times), 2)
+        report["max"] = round(max(times), 2)
+        report["min"] = round(min(times), 2)
 
-    return config
+    return report

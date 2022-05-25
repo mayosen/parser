@@ -5,38 +5,24 @@ from time import time
 import aiohttp
 
 from consts import USER_AGENTS
-from scanner import search_for_hrefs, clean_tags, get_pattern, get_template, split_endpoints
+from parsers.base_parser import BaseParser
+from scanner import search_for_hrefs, get_template, get_pattern, clean_tags
 
 
-class AsyncParser:
-    # TODO: BaseParser class
+class AsyncParser(BaseParser):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    def __init__(
-            self,
-            other_domains=True,
-            nesting_limit=0,
-            time_limit=0,
-            scanned_limit=0,
-            found_limit=0,
-            ignore_list: list[str] = None,
-    ):
-        self.other_domains = other_domains
-        self.nesting_limit = nesting_limit
-        self.ignore_list = [split_endpoints(ignore_sample) for ignore_sample in ignore_list] if ignore_list else None
-
-        self.time_limit = time_limit
-        self.scanned_limit = scanned_limit
-        self.found_limit = found_limit
-
-        self.pages_scanned = set()
-        self.pages_found = set()
-
-    def run(self, first_url: str):
+    def run(self, first_url: str) -> tuple[dict, list, list]:
         self.pages_scanned.clear()
         self.pages_found.clear()
         started = time()
         asyncio.run(self.main(first_url))
-        print(f"time: {time() - started:.2f}")
+        times = {
+            "total": time() - started,
+        }
+        return times, list(self.pages_scanned), sorted(self.pages_found)
 
     async def main(self, first_url: str):
         async with aiohttp.ClientSession() as session:
@@ -44,7 +30,7 @@ class AsyncParser:
 
     async def scan_page(self, session: aiohttp.ClientSession, start_url: str):
         if start_url in self.pages_scanned:
-            print("already scanned:", start_url)
+            # print("already scanned:", start_url)
             return
         headers = {
             "User-Agent": choice(USER_AGENTS),
@@ -56,7 +42,7 @@ class AsyncParser:
                 final_url = start_url if not response.history else clean_tags(str(response.url))
 
                 if final_url in self.pages_scanned:
-                    print("already scanned:", final_url)
+                    # print("already scanned:", final_url)
                     return
 
                 print("scanning:", start_url)
@@ -64,9 +50,9 @@ class AsyncParser:
 
                 if start_url != final_url:
                     print("redirected to:", final_url)
-                if get_pattern(start_url, full=False) != get_pattern(final_url, full=False):
-                    print("skipped:", final_url)
-                    return
+                    if get_pattern(start_url, full=False) != get_pattern(final_url, full=False):
+                        print("skipped:", final_url)
+                        return
 
                 try:
                     html = await response.text()
@@ -79,7 +65,6 @@ class AsyncParser:
                     final_url, template, html, self.other_domains, self.nesting_limit, self.ignore_list,
                 )
                 self.pages_found.update(links)
-                self.pages_scanned.update({start_url, final_url})
                 unique_links = links - self.pages_scanned
 
                 if unique_links:
@@ -93,10 +78,9 @@ class AsyncParser:
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    t = time()
-    url = "https://www.google.com/"
+    url = "http://www.avosetrov.ru/"
     p = AsyncParser()
-    p.run(url)
+    times, _, _ = p.run(url)
+    print(f"time: {times['total']:.2f}")
     print("scanned:", len(p.pages_scanned))
     print("found:", len(p.pages_found))
-    print(f"{time() - t:.2f}")
