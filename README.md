@@ -20,7 +20,7 @@ write_report(
 	endpoints=found,
 	tree=tree,
 )
-```	
+```
 makes the following `www.google.json` file:
 ```yaml
 {
