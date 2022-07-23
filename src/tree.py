@@ -1,3 +1,8 @@
+from yarl import URL
+
+from scantools import Host
+
+
 def merge_branch(tree: dict, branch: list) -> dict:
     """
     Merges branch as a list into nested dictionary.
@@ -19,25 +24,20 @@ def merge_branch(tree: dict, branch: list) -> dict:
     return tree
 
 
-def build_tree(url: str, found_links: list) -> dict:
+def build_tree(main_url: str, found: list[str]) -> dict:
     """
     Builds tree-structure from found links.
     """
 
-    links = [link[link.find("//") + 2:].rstrip("/") for link in found_links]
+    main_host = Host(URL(main_url).host).rebuild()
     branches = []
 
-    for link in links:
-        if "/" in link:
-            domains, endpoints = link.split("/", maxsplit=1)
-            endpoints = endpoints.split("/")
-        else:
-            domains = link
-            endpoints = []
-
-        domains = domains.split(".")[:-2][::-1]
-        domains = [domain + ":domain" for domain in domains]
-        items = domains + endpoints
+    for link in found:
+        url = URL(link)
+        host = Host(url.host)
+        domains = [f"domain:{domain}" for domain in host.domains[2:]]
+        parts = list(filter(lambda item: item, url.parts[1:]))
+        items = domains + parts
 
         if items:
             branches.append(items)
@@ -47,4 +47,6 @@ def build_tree(url: str, found_links: list) -> dict:
     for branch in branches:
         tree = merge_branch(tree, branch)
 
-    return tree
+    return {
+        main_host: tree,
+    }

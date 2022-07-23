@@ -5,6 +5,7 @@ from saver import write_report
 from scanner import get_pattern
 from tree import build_tree
 
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         site, params, sync = parse_args()
