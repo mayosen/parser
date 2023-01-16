@@ -1,10 +1,10 @@
+import asyncio
 import logging
 
-import anyio as anyio
 from bs4 import BeautifulSoup
 from yarl import URL
 
-logger = logging.getLogger("parser")
+logger = logging.getLogger("parser.pages")
 
 
 class Host:
@@ -36,6 +36,7 @@ def search_for_urls(html: str) -> set[str]:
 
 
 def normalize_url(base: URL, base_host: Host, raw_url: str) -> URL | None:
+    raw_url = raw_url.strip(" \n")
     logger.debug("Raw: %s", raw_url)
     url = URL(raw_url).with_fragment(None).with_query(None)
 
@@ -60,14 +61,17 @@ def normalize_url(base: URL, base_host: Host, raw_url: str) -> URL | None:
     return url
 
 
-async def scan_page(base: URL, base_host: Host, html: str) -> set[str]:
+async def scan_page(url: str, html: str) -> set[str]:
     raw_urls = search_for_urls(html)
+    await asyncio.sleep(0)
+
     clean_urls = set()
-    await anyio.sleep(0)
+    base = URL(url)
+    base_host = Host(base)
 
     for raw_url in raw_urls:
         if url := normalize_url(base, base_host, raw_url):
             clean_urls.add(str(url))
-        await anyio.sleep(0)
+        await asyncio.sleep(0)
 
     return clean_urls
