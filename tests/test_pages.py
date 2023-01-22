@@ -1,6 +1,6 @@
 from yarl import URL
 
-from parser.pages import Host, normalize_url
+from parser.pages import Host, normalize_url, search_for_urls, scan_page
 
 
 class TestNormalizeUrl:
@@ -87,3 +87,61 @@ class TestHost:
     def test_contains_top_level(self):
         assert Host("www.google.ru", top_level=True) in Host("google.ru")
         assert Host("www.google.ru", top_level=True) in Host("www.google.ru")
+
+
+def html_with_body(body: str) -> str:
+    return f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+        <meta charset="UTF-8">
+        <title>Title</title>
+        </head>
+        <body>
+            {body}
+        </body>
+        </html>
+        """
+
+
+class TestSearchForUrl:
+    def test_finding_hrefs(self):
+        html = html_with_body("""
+              <p>Paragraph</p>
+              <a>Empty link</a>
+              <a href="/help">Link to help</a>
+              <div>
+                  <a href="#">Fragment link</a>
+                  <a href="">Empty link</a>
+                  <a href="/">Root link</a>
+              </div>
+            """)
+        urls = search_for_urls(html)
+        assert urls == {"", "/", "#", "/help"}
+
+    def test_no_duplicates(self):
+        html = html_with_body("""
+            <a href="/help">Link</a>
+            <a href="/help">Duplicate</a>
+            """)
+        urls = search_for_urls(html)
+        assert urls == {"/help"}
+
+
+class TestScanPage:
+    async def test_simple(self):
+        url = "https://example.org"
+        html = html_with_body("""
+            <a href="/relative"></a>
+            <a href="https://example.org/absolute"></a>
+            <a href="https://www.google.com"></a>
+            <a href="#"></a>
+            <a href="/"></a>
+            """)
+        urls = await scan_page(url, html)
+        assert urls == {
+            "https://example.org/relative",
+            "https://example.org/absolute",
+            "https://example.org",
+            "https://example.org/",
+        }
