@@ -7,7 +7,7 @@ class TestNormalizeUrl:
     @staticmethod
     def with_base(base_url: str):
         base = URL(base_url)
-        base_host = Host(base)
+        base_host = Host(base.host)
 
         def wrapper(url: str) -> str | None:
             normalized = normalize_url(base, base_host, url)

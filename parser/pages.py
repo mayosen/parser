@@ -1,16 +1,15 @@
+import asyncio
 import logging
 
-import anyio as anyio
 from bs4 import BeautifulSoup
 from yarl import URL
 
-logger = logging.getLogger("parser")
+logger = logging.getLogger("parser.pages")
 
 
 class Host:
-    def __init__(self, url: str | URL, top_level: bool = False):
-        raw_host = url.host if isinstance(url, URL) else url
-        parts = raw_host.split(".")
+    def __init__(self, host: str, top_level: bool = False):
+        parts = host.split(".")
         self._parts = parts[::-1] if not top_level else parts[:-3:-1]
         self._raw = ".".join(self._parts[::-1])
 
@@ -36,6 +35,7 @@ def search_for_urls(html: str) -> set[str]:
 
 
 def normalize_url(base: URL, base_host: Host, raw_url: str) -> URL | None:
+    raw_url = raw_url.strip(" \n")
     logger.debug("Raw: %s", raw_url)
     url = URL(raw_url).with_fragment(None).with_query(None)
 
@@ -48,7 +48,7 @@ def normalize_url(base: URL, base_host: Host, raw_url: str) -> URL | None:
         return None
 
     if url.is_absolute():
-        if base_host not in (host := Host(url)):
+        if base_host not in (host := Host(url.host)):
             logger.debug("Skip: host '%s' not belongs to base '%s'", host, base_host)
             return None
         if not url.scheme:
@@ -60,14 +60,17 @@ def normalize_url(base: URL, base_host: Host, raw_url: str) -> URL | None:
     return url
 
 
-async def scan_page(base: URL, base_host: Host, html: str) -> set[str]:
+async def scan_page(url: str, html: str) -> set[str]:
     raw_urls = search_for_urls(html)
+    await asyncio.sleep(0)
+
     clean_urls = set()
-    await anyio.sleep(0)
+    base = URL(url)
+    base_host = Host(base.host)
 
     for raw_url in raw_urls:
         if url := normalize_url(base, base_host, raw_url):
             clean_urls.add(str(url))
-        await anyio.sleep(0)
+        await asyncio.sleep(0)
 
     return clean_urls
