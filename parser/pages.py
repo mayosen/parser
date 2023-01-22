@@ -48,7 +48,7 @@ def normalize_url(base: URL, base_host: Host, raw_url: str) -> URL | None:
         return None
 
     if url.is_absolute():
-        if base_host not in (host := Host(url)):
+        if base_host not in (host := Host(url.host)):
             logger.debug("Skip: host '%s' not belongs to base '%s'", host, base_host)
             return None
         if not url.scheme:
