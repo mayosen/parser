@@ -8,9 +8,8 @@ logger = logging.getLogger("parser.pages")
 
 
 class Host:
-    def __init__(self, url: str | URL, top_level: bool = False):
-        raw_host = url.host if isinstance(url, URL) else url
-        parts = raw_host.split(".")
+    def __init__(self, host: str, top_level: bool = False):
+        parts = host.split(".")
         self._parts = parts[::-1] if not top_level else parts[:-3:-1]
         self._raw = ".".join(self._parts[::-1])
 
@@ -67,7 +66,7 @@ async def scan_page(url: str, html: str) -> set[str]:
 
     clean_urls = set()
     base = URL(url)
-    base_host = Host(base)
+    base_host = Host(base.host)
 
     for raw_url in raw_urls:
         if url := normalize_url(base, base_host, raw_url):

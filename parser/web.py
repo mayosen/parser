@@ -1,27 +1,26 @@
 import asyncio
 import logging
-from typing import Coroutine, Any
+from typing import Coroutine, Any, TypeVar, Generic
 
 from aiohttp import ClientSession
 
 from parser.pages import scan_page
 
+T = TypeVar("T")
 module_logger = logging.getLogger("parser.web")
 
 
-class UniqueQueue:
-    """Wrapper on asyncio.Queue containing only unique elements."""
+class UniqueQueue(Generic[T]):
+    """Wrapper for asyncio.Queue receiving only unique elements."""
 
     def __init__(self):
         self._queue = asyncio.Queue()
         self._values = set()
 
-    async def get(self) -> Any:
-        item = await self._queue.get()
-        self._values.remove(item)
-        return item
+    def get(self) -> Coroutine[Any, Any, T]:
+        return self._queue.get()
 
-    def put_nowait(self, item) -> None:
+    def put_nowait(self, item: T) -> None:
         if item not in self._values:
             self._queue.put_nowait(item)
             self._values.add(item)
@@ -39,39 +38,33 @@ class UniqueQueue:
         return f"<UniqueQueue size={self.qsize()}>"
 
 
-async def work(name: str, session: ClientSession, queue: UniqueQueue, found: set[str], scanned: set[str]):
+async def work(name: str, session: ClientSession, queue: UniqueQueue[str], found: set[str], scanned: set[str]):
     logger = module_logger.getChild(name)
 
     while True:
         url = await queue.get()
+        logger.info("Started scanning: %s", url)
 
         try:
-            if url in scanned:
-                logger.info("Already scanned: %s", url)
-                continue
-
-            logger.info("Started scanning: %s", url)
-
-            # TODO: Process redirects
             async with session.get(url, allow_redirects=False) as response:
                 html = await response.text()
                 page_links = await scan_page(url, html)
                 scanned.add(url)
 
-                new_links = page_links - scanned
-                logger.info("Found links: %d new, %d total", len(new_links), len(page_links))
-                found.update(new_links)
+                found_before = len(found)
+                found.update(page_links)
 
-                for link in new_links:
+                for link in page_links:
                     queue.put_nowait(link)
 
+                logger.info("Found links: %d new, %d total", len(found) - found_before, len(page_links))
                 logger.debug("Current queue size is %d", queue.qsize())
 
         finally:
             queue.task_done()
 
 
-async def watch_workers(queue: UniqueQueue, workers: list[asyncio.Task]):
+async def watch_for_workers(queue: UniqueQueue, workers: list[asyncio.Task]):
     await queue.join()
     module_logger.info("Scanning finished")
 
@@ -93,18 +86,19 @@ async def parse(url: str) -> tuple[set[str], set[str]]:
 
             for i in range(1, workers_number + 1):
                 name = f"worker-{i}"
-                task = tg.create_task(work(name, session, queue, found, scanned), name=name)
-                workers.append(task)
+                worker = tg.create_task(work(name, session, queue, found, scanned), name=name)
+                workers.append(worker)
 
-            tg.create_task(watch_workers(queue, workers), name="watcher")
+            tg.create_task(watch_for_workers(queue, workers), name="watcher")
 
     print(len(found))
     print(len(scanned))
-    return scanned, found
+    return found, scanned
 
 
 async def main():
     url = "https://www.google.ru/"
+    # url = "https://dvmn.org/modules/"
     await parse(url)
 
 
