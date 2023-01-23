@@ -130,7 +130,8 @@ class TestSearchForUrl:
 
 class TestScanPage:
     async def test_simple(self):
-        url = "https://example.org"
+        url = URL("https://example.org")
+        host = Host(url.host)
         html = html_with_body("""
             <a href="/relative"></a>
             <a href="https://example.org/absolute"></a>
@@ -138,10 +139,9 @@ class TestScanPage:
             <a href="#"></a>
             <a href="/"></a>
             """)
-        urls = await scan_page(url, html)
-        assert urls == {
+        urls = await scan_page(url, host, html)
+        assert {str(url) for url in urls} == {
             "https://example.org/relative",
             "https://example.org/absolute",
             "https://example.org",
-            "https://example.org/",
         }
