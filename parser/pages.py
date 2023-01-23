@@ -60,17 +60,14 @@ def normalize_url(base: URL, base_host: Host, raw_url: str) -> URL | None:
     return url
 
 
-async def scan_page(url: str, html: str) -> set[str]:
+async def scan_page(base: URL, base_host: Host, html: str) -> set[URL]:
     raw_urls = search_for_urls(html)
     await asyncio.sleep(0)
-
     clean_urls = set()
-    base = URL(url)
-    base_host = Host(base.host)
 
     for raw_url in raw_urls:
         if url := normalize_url(base, base_host, raw_url):
-            clean_urls.add(str(url))
+            clean_urls.add(url)
         await asyncio.sleep(0)
 
     return clean_urls

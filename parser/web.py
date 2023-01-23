@@ -3,8 +3,9 @@ import logging
 from typing import Coroutine, Any, TypeVar, Generic
 
 from aiohttp import ClientSession
+from yarl import URL
 
-from parser.pages import scan_page
+from parser.pages import Host, normalize_url, scan_page
 
 T = TypeVar("T")
 module_logger = logging.getLogger("parser.web")
@@ -38,17 +39,29 @@ class UniqueQueue(Generic[T]):
         return f"<UniqueQueue size={self.qsize()}>"
 
 
-async def work(name: str, session: ClientSession, queue: UniqueQueue[str], found: set[str], scanned: set[str]):
+async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found: set[URL], scanned: set[URL]):
     logger = module_logger.getChild(name)
 
     while True:
         url = await queue.get()
+        host = Host(url.host)
         logger.info("Started scanning: %s", url)
 
         try:
             async with session.get(url, allow_redirects=False) as response:
+                if response.status in (301, 302):
+                    raw_redirect = response.headers["location"]
+                    logger.info("Got redirect %d: %s", response.status, raw_redirect)
+
+                    if redirect_url := normalize_url(url, host, raw_redirect):
+                        queue.put_nowait(redirect_url)
+                        continue
+
+                if not response.ok:
+                    logger.info("Got bad response %d: %s", response.status, response.reason)
+
                 html = await response.text()
-                page_links = await scan_page(url, html)
+                page_links = await scan_page(url, host, html)
                 scanned.add(url)
 
                 found_before = len(found)
@@ -72,7 +85,8 @@ async def watch_for_workers(queue: UniqueQueue, workers: list[asyncio.Task]):
         worker.cancel()
 
 
-async def parse(url: str) -> tuple[set[str], set[str]]:
+async def parse(url: str) -> tuple[set[URL], set[URL]]:
+    url = URL(url)
     queue = UniqueQueue()
     queue.put_nowait(url)
 
