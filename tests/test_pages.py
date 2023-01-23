@@ -143,5 +143,5 @@ class TestScanPage:
         assert {str(url) for url in urls} == {
             "https://example.org/relative",
             "https://example.org/absolute",
-            "https://example.org",
+            "https://example.org/",
         }
