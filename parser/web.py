@@ -2,6 +2,7 @@ import asyncio
 import logging
 from typing import Coroutine, Any, TypeVar, Generic
 
+import async_timeout
 from aiohttp import ClientSession
 from yarl import URL
 
@@ -77,15 +78,18 @@ async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found
             queue.task_done()
 
 
-async def watch_for_workers(queue: UniqueQueue, workers: list[asyncio.Task]):
-    await queue.join()
-    module_logger.info("Scanning finished")
-
+def cancel_workers(workers: list[asyncio.Task]):
     for worker in workers:
         worker.cancel()
 
 
-async def parse(url: str) -> tuple[set[URL], set[URL]]:
+async def watch_for_scanning_completion(queue: UniqueQueue, workers: list[asyncio.Task]):
+    await queue.join()
+    module_logger.info("Scanning is fully completed")
+    cancel_workers(workers)
+
+
+async def parse(url: str, timeout: float | None = None) -> tuple[set[URL], set[URL]]:
     url = URL(url)
     queue = UniqueQueue()
     queue.put_nowait(url)
@@ -95,15 +99,21 @@ async def parse(url: str) -> tuple[set[URL], set[URL]]:
     workers_number = 10
 
     async with ClientSession() as session:
-        async with asyncio.TaskGroup() as tg:
-            workers = []
+        try:
+            async with async_timeout.timeout(timeout):
+                async with asyncio.TaskGroup() as tg:
+                    workers = []
 
-            for i in range(1, workers_number + 1):
-                name = f"worker-{i}"
-                worker = tg.create_task(work(name, session, queue, found, scanned), name=name)
-                workers.append(worker)
+                    for i in range(1, workers_number + 1):
+                        name = f"worker-{i}"
+                        worker = tg.create_task(work(name, session, queue, found, scanned), name=name)
+                        workers.append(worker)
 
-            tg.create_task(watch_for_workers(queue, workers), name="watcher")
+                    tg.create_task(watch_for_scanning_completion(queue, workers))
+
+        except asyncio.TimeoutError:
+            module_logger.info("Got timeout limit")
+            cancel_workers(workers)
 
     print(len(found))
     print(len(scanned))
