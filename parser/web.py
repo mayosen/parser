@@ -2,18 +2,20 @@ import asyncio
 import logging
 from typing import Coroutine, Any, TypeVar, Generic, Sized
 
-import async_timeout
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientTimeout
 from yarl import URL
 
 from parser.pages import Host, normalize_url, scan_page
 
 T = TypeVar("T")
+REQUEST_TIMEOUT = ClientTimeout(total=10)
+CHECK_INTERVAL = 0.1
+
 module_logger = logging.getLogger("parser.web")
 
 
-class ScanningFinished(Exception):
-    """Scanning has been finished."""
+class StopScanning(Exception):
+    """Notify tasks that scanning has to be finished."""
 
 
 class UniqueQueue(Generic[T]):
@@ -53,14 +55,16 @@ async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found
         logger.info("Started scanning: %s", url)
 
         try:
-            async with session.get(url, allow_redirects=False) as response:
+            async with session.get(url, allow_redirects=False, timeout=REQUEST_TIMEOUT) as response:
                 if response.status in (301, 302):
                     raw_redirect = response.headers["location"]
-                    logger.info("Got redirect %d: %s", response.status, raw_redirect)
-
+                    logger.info("Got %d redirect: %s", response.status, raw_redirect)
                     if redirect_url := normalize_url(url, host, raw_redirect):
+                        logger.info("Redirect added to the end of queue: %s", redirect_url)
                         queue.put_nowait(redirect_url)
-                        continue
+                    else:
+                        logger.info("Redirect skipped")
+                    continue
 
                 if not response.ok:
                     logger.info("Got bad response %d: %s", response.status, response.reason)
@@ -78,6 +82,10 @@ async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found
                 logger.info("Found links: %d new, %d total", len(found) - found_before, len(page_links))
                 logger.debug("Current queue size is %d", queue.qsize())
 
+        except asyncio.TimeoutError:
+            logger.info("Cannot get response from %s", url)
+            continue
+
         finally:
             queue.task_done()
 
@@ -85,29 +93,17 @@ async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found
 async def watch_for_scanning_completion(queue: UniqueQueue):
     await queue.join()
     module_logger.info("All urls have been processed")
-    raise ScanningFinished
+    raise StopScanning
 
 
 async def watch_for_numeric_limit(name: str, limit: int | None, collection: Sized):
     if limit:
         while True:
+            module_logger.debug("Watching for %s limit", name)
             if len(collection) >= limit:
                 module_logger.info("Got %s limit", name)
-                raise ScanningFinished
-            await asyncio.sleep(0.05)
-
-
-async def cancel_tasks(tasks: list[asyncio.Task]):
-    """Cancel tasks and wait for it."""
-
-    for task in tasks:
-        task.cancel()
-    for task in tasks:
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
-    module_logger.debug("All %d tasks cancelled", len(tasks))
+                raise StopScanning
+            await asyncio.sleep(CHECK_INTERVAL)
 
 
 async def parse(
@@ -124,35 +120,34 @@ async def parse(
     queue.put_nowait(url)
 
     workers_number = 5
-    tasks = []
 
     try:
-        async with async_timeout.timeout(timeout):
+        async with asyncio.timeout(timeout):
             async with ClientSession() as session:
                 try:
                     async with asyncio.TaskGroup() as tg:
                         for i in range(1, workers_number + 1):
                             name = f"worker-{i}"
-                            tasks.append(tg.create_task(work(name, session, queue, found, scanned), name=name))
+                            tg.create_task(work(name, session, queue, found, scanned), name=name)
 
-                        tasks.extend([
-                            tg.create_task(
-                                watch_for_numeric_limit("scanned", max_scanned, scanned),
-                                name="scanned-watcher"),
-                            tg.create_task(
-                                watch_for_numeric_limit("found", max_found, found),
-                                name="found-watcher"),
-                            tg.create_task(
-                                watch_for_scanning_completion(queue),
-                                name="completion-watcher")
-                        ])
+                        tg.create_task(
+                            watch_for_numeric_limit("scanned", max_scanned, scanned),
+                            name="scanned-watcher"
+                        )
+                        tg.create_task(
+                            watch_for_numeric_limit("found", max_found, found),
+                            name="found-watcher"
+                        )
+                        tg.create_task(
+                            watch_for_scanning_completion(queue),
+                            name="completion-watcher"
+                        )
 
-                except* ScanningFinished:
+                except* StopScanning:
                     pass
 
     except asyncio.TimeoutError:
         module_logger.info("Got timeout limit")
-        await cancel_tasks(tasks)
 
     return found, scanned
 
@@ -160,7 +155,9 @@ async def parse(
 async def main():
     url = "https://www.google.ru/"
     # url = "https://dvmn.org/modules/"
-    await parse(url, timeout=2)
+    found, scanned = await parse(url, timeout=200, max_scanned=1000, max_found=50)
+    module_logger.info("Total found %d", len(found))
+    module_logger.info("Total scanned %d", len(scanned))
 
 
 if __name__ == "__main__":
