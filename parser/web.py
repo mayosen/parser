@@ -65,8 +65,8 @@ async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found
                     raw_redirect = response.headers["location"]
                     logger.info("Got %d redirect: %s", response.status, raw_redirect)
                     if redirect_url := normalize_url(url, host, raw_redirect):
-                        logger.info("Redirect added to the end of queue: %s", redirect_url)
                         queue.put_nowait(redirect_url)
+                        logger.info("Redirect added to the end of queue: %s", redirect_url)
                     else:
                         logger.info("Redirect skipped")
                     continue
@@ -115,14 +115,19 @@ async def parse(
         timeout: float | None = None,
         max_scanned: int | None = None,
         max_found: int | None = None,
+        found: set[URL] | None = None,
+        scanned: set[URL] | None = None
 ) -> tuple[set[URL], set[URL]]:
     url = URL(url)
-    found = {url}
-    scanned = set()
-
     queue = UniqueQueue()
     queue.put_nowait(url)
     workers_number = 5
+
+    if found is None:
+        found = set()
+        found.add(url)
+    if scanned is None:
+        scanned = set()
 
     try:
         async with asyncio.timeout(timeout):
@@ -131,7 +136,10 @@ async def parse(
                     async with asyncio.TaskGroup() as tg:
                         for i in range(1, workers_number + 1):
                             name = f"worker-{i}"
-                            tg.create_task(work(name, session, queue, found, scanned), name=name)
+                            tg.create_task(
+                                work(name, session, queue, found, scanned),
+                                name=name
+                            )
 
                         tg.create_task(
                             watch_for_numeric_limit("scanned", max_scanned, scanned),
