@@ -3,6 +3,7 @@ import logging
 from typing import Coroutine, Any, TypeVar, Generic, Sized
 
 from aiohttp import ClientSession, ClientTimeout
+from fake_useragent import UserAgent
 from yarl import URL
 
 from parser.pages import Host, normalize_url, scan_page
@@ -11,6 +12,7 @@ T = TypeVar("T")
 REQUEST_TIMEOUT = ClientTimeout(total=10)
 CHECK_INTERVAL = 0.1
 
+user_agent = UserAgent()
 module_logger = logging.getLogger("parser.web")
 
 
@@ -52,10 +54,13 @@ async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found
     while True:
         url = await queue.get()
         host = Host(url.host)
+        headers = {
+            "User-Agent": user_agent.random
+        }
         logger.info("Started scanning: %s", url)
 
         try:
-            async with session.get(url, allow_redirects=False, timeout=REQUEST_TIMEOUT) as response:
+            async with session.get(url, allow_redirects=False, timeout=REQUEST_TIMEOUT, headers=headers) as response:
                 if response.status in (301, 302):
                     raw_redirect = response.headers["location"]
                     logger.info("Got %d redirect: %s", response.status, raw_redirect)
@@ -99,7 +104,6 @@ async def watch_for_scanning_completion(queue: UniqueQueue):
 async def watch_for_numeric_limit(name: str, limit: int | None, collection: Sized):
     if limit:
         while True:
-            module_logger.debug("Watching for %s limit", name)
             if len(collection) >= limit:
                 module_logger.info("Got %s limit", name)
                 raise StopScanning
@@ -118,7 +122,6 @@ async def parse(
 
     queue = UniqueQueue()
     queue.put_nowait(url)
-
     workers_number = 5
 
     try:
@@ -154,8 +157,7 @@ async def parse(
 
 async def main():
     url = "https://www.google.ru/"
-    # url = "https://dvmn.org/modules/"
-    found, scanned = await parse(url, timeout=200, max_scanned=1000, max_found=50)
+    found, scanned = await parse(url)
     module_logger.info("Total found %d", len(found))
     module_logger.info("Total scanned %d", len(scanned))
 
