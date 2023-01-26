@@ -18,7 +18,13 @@ pytest = "^7.2.0"
 pytest-asyncio = "^0.20.3"
 pytest-httpbin = "1.0.2"
 werkzeug = "2.0.3"
+black = "^22.12.0"
+mypy = "^0.991"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
