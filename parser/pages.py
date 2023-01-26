@@ -13,7 +13,9 @@ class Host:
         self._parts = parts[::-1] if not top_level else parts[:-3:-1]
         self._raw = ".".join(self._parts[::-1])
 
-    def __eq__(self, other: "Host"):
+    def __eq__(self, other: object):
+        if not isinstance(other, Host):
+            raise NotImplementedError
         return self._parts == other._parts
 
     def __contains__(self, other: "Host"):

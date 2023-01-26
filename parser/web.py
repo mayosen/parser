@@ -24,7 +24,7 @@ class UniqueQueue(Generic[T]):
     """Wrapper for asyncio.Queue receiving only unique elements."""
 
     def __init__(self):
-        self._queue = asyncio.Queue()
+        self._queue = asyncio.Queue[T]()
         self._values = set()
 
     def get(self) -> Coroutine[Any, Any, T]:
@@ -48,7 +48,7 @@ class UniqueQueue(Generic[T]):
         return f"<UniqueQueue size={self.qsize()}>"
 
 
-async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found: set[URL], scanned: set[URL]):
+async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found: set[URL], scanned: set[URL]) -> None:
     logger = module_logger.getChild(name)
 
     while True:
@@ -98,13 +98,13 @@ async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found
             queue.task_done()
 
 
-async def watch_for_scanning_completion(queue: UniqueQueue):
+async def watch_for_scanning_completion(queue: UniqueQueue[URL]) -> None:
     await queue.join()
     module_logger.info("All urls have been processed")
     raise StopScanning
 
 
-async def watch_for_numeric_limit(name: str, limit: int | None, collection: Sized):
+async def watch_for_numeric_limit(name: str, limit: int | None, collection: Sized) -> None:
     if limit:
         while True:
             if len(collection) >= limit:
@@ -122,7 +122,7 @@ async def parse(
     scanned: set[URL] | None = None,
 ) -> tuple[set[URL], set[URL]]:
     url = URL(url)
-    queue = UniqueQueue()
+    queue = UniqueQueue[URL]()
     queue.put_nowait(url)
     workers_number = 5
 
@@ -154,7 +154,7 @@ async def parse(
     return found, scanned
 
 
-async def main():
+async def main() -> None:
     url = "https://www.google.ru/"
     found, scanned = await parse(url)
     module_logger.info("Total found %d", len(found))
