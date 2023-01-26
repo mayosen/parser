@@ -17,7 +17,7 @@ class Host:
         return self._parts == other._parts
 
     def __contains__(self, other: "Host"):
-        return self._parts[:len(other._parts)] == other._parts
+        return self._parts[: len(other._parts)] == other._parts
 
     def __repr__(self):
         return f"Host({self._raw})"

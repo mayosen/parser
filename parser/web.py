@@ -114,12 +114,12 @@ async def watch_for_numeric_limit(name: str, limit: int | None, collection: Size
 
 
 async def parse(
-        url: str,
-        timeout: float | None = None,
-        max_scanned: int | None = None,
-        max_found: int | None = None,
-        found: set[URL] | None = None,
-        scanned: set[URL] | None = None
+    url: str,
+    timeout: float | None = None,
+    max_scanned: int | None = None,
+    max_found: int | None = None,
+    found: set[URL] | None = None,
+    scanned: set[URL] | None = None,
 ) -> tuple[set[URL], set[URL]]:
     url = URL(url)
     queue = UniqueQueue()
@@ -139,23 +139,11 @@ async def parse(
                     async with asyncio.TaskGroup() as tg:
                         for i in range(1, workers_number + 1):
                             name = f"worker-{i}"
-                            tg.create_task(
-                                work(name, session, queue, found, scanned),
-                                name=name
-                            )
+                            tg.create_task(work(name, session, queue, found, scanned), name=name)
 
-                        tg.create_task(
-                            watch_for_numeric_limit("scanned", max_scanned, scanned),
-                            name="scanned-watcher"
-                        )
-                        tg.create_task(
-                            watch_for_numeric_limit("found", max_found, found),
-                            name="found-watcher"
-                        )
-                        tg.create_task(
-                            watch_for_scanning_completion(queue),
-                            name="completion-watcher"
-                        )
+                        tg.create_task(watch_for_numeric_limit("scanned", max_scanned, scanned), name="scanned-watcher")
+                        tg.create_task(watch_for_numeric_limit("found", max_found, found), name="found-watcher")
+                        tg.create_task(watch_for_scanning_completion(queue), name="completion-watcher")
 
                 except* StopScanning:
                     pass
