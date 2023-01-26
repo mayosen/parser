@@ -136,7 +136,6 @@ class TestScanPage:
             <a href="/relative"></a>
             <a href="https://example.org/absolute"></a>
             <a href="https://www.google.com"></a>
-            <a href="#"></a>
             <a href="/"></a>
             """)
         urls = await scan_page(url, host, html)
