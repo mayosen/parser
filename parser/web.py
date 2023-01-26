@@ -53,19 +53,22 @@ async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found
 
     while True:
         url = await queue.get()
-        host = Host(url.host)
-        headers = {
-            "User-Agent": user_agent.random
-        }
-        logger.info("Started scanning: %s", url)
 
         try:
+            host = Host(url.host)
+            headers = {"User-Agent": user_agent.random}
+            logger.info("Started scanning: %s", url)
+
             async with session.get(url, allow_redirects=False, timeout=REQUEST_TIMEOUT, headers=headers) as response:
                 if response.status in (301, 302):
                     raw_redirect = response.headers["location"]
                     logger.info("Got %d redirect: %s", response.status, raw_redirect)
+                    scanned.add(url)
+                    found.add(url)
+
                     if redirect_url := normalize_url(url, host, raw_redirect):
                         queue.put_nowait(redirect_url)
+                        found.add(redirect_url)
                         logger.info("Redirect added to the end of queue: %s", redirect_url)
                     else:
                         logger.info("Redirect skipped")
@@ -84,7 +87,7 @@ async def work(name: str, session: ClientSession, queue: UniqueQueue[URL], found
                 for link in page_links:
                     queue.put_nowait(link)
 
-                logger.info("Found links: %d new, %d total", len(found) - found_before, len(page_links))
+                logger.info("Found links: %d new, %d in total", len(found) - found_before, len(page_links))
                 logger.debug("Current queue size is %d", queue.qsize())
 
         except asyncio.TimeoutError:
@@ -172,7 +175,7 @@ async def main():
 
 if __name__ == "__main__":
     logging.basicConfig(
-        format=u"%(asctime)5s.%(msecs)03d [%(levelname)s] %(name)s - %(message)s",
+        format="%(asctime)5s.%(msecs)03d [%(levelname)s] %(name)s - %(message)s",
         level=logging.DEBUG,
         datefmt="%H:%M:%S",
     )
