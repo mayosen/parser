@@ -3,7 +3,7 @@ import logging
 from enum import Enum
 from typing import Coroutine, Any, TypeVar, Generic, Sized, cast
 
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientSession, ClientTimeout, ClientConnectionError
 from fake_useragent import UserAgent
 from yarl import URL
 
@@ -20,8 +20,8 @@ module_logger = logging.getLogger("parser.web")
 
 
 class StopReason(Enum):
-    ALL_PROCESSED = None
-    TIMEOUT = None
+    ALL_PROCESSED = "all processed"
+    TIMEOUT = "timeout"
     FOUND_LIMIT = "found"
     SCANNED_LIMIT = "scanned"
 
@@ -113,6 +113,10 @@ async def work(
 
                 logger.info("Found links: %d new, %d in total", len(found) - found_before, len(page_links))
                 logger.debug("Current queue size is %d", queue.qsize())
+
+        except ClientConnectionError as e:
+            logger.error(e)
+            continue
 
         except asyncio.TimeoutError:
             logger.info("Cannot get response from %s", url)
