@@ -1,5 +1,4 @@
 import asyncio
-from unittest.mock import patch
 
 import aiohttp
 import httpbin
@@ -96,8 +95,7 @@ class TestParse:
 
     async def test_request_timeout(self, server):
         url = f"{server.url}/delay/2"
-        with patch("parser.web.REQUEST_TIMEOUT", aiohttp.ClientTimeout(total=0.1)):
-            found, scanned, reason = await parse_str(url)
+        found, scanned, reason = await parse_str(url, request_timeout=aiohttp.ClientTimeout(total=0.1))
         assert found == {url}
         assert scanned == set()
         assert reason == StopReason.ALL_PROCESSED
@@ -134,14 +132,12 @@ class TestParse:
 
     async def test_max_scanned(self, server):
         limit = 10
-        with patch("parser.web.CHECK_INTERVAL", 0):
-            found, scanned, reason = await parse_str(f"{server.url}/links/50/0", max_scanned=limit)
+        found, scanned, reason = await parse_str(f"{server.url}/links/50/0", max_scanned=limit, check_interval=0)
         assert abs(len(scanned) - limit) <= 1
         assert reason == StopReason.SCANNED_LIMIT
 
     async def test_max_found(self, server):
-        with patch("parser.web.CHECK_INTERVAL", 0):
-            found, scanned, reason = await parse_str(f"{server.url}/links/10/0", max_found=10)
+        found, scanned, reason = await parse_str(f"{server.url}/links/10/0", max_found=10, check_interval=0)
         assert len(scanned) == 1
         assert len(found) == 10
         assert reason == StopReason.FOUND_LIMIT
