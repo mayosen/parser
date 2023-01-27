@@ -6,7 +6,7 @@ import httpbin
 import pytest
 from pytest_httpbin import serve
 
-from parser.web import UniqueQueue, parse
+from parser.web import StopReason, UniqueQueue, parse
 
 
 class TestUniqueQueue:
@@ -74,44 +74,48 @@ def server():
     server.stop()
 
 
-async def parse_str(url: str, **kwargs) -> tuple[set[str], set[str]]:
-    found, scanned = await parse(url, **kwargs)
-    return {str(url) for url in found}, {str(url) for url in scanned}
+async def parse_str(url: str, **kwargs) -> tuple[set[str], set[str], StopReason]:
+    found, scanned, reason = await parse(url, **kwargs)
+    return {str(url) for url in found}, {str(url) for url in scanned}, reason
 
 
 class TestParse:
     async def test_auto_scanning_completion(self, server):
-        found, scanned = await parse_str(f"{server.url}/links/5/0")
+        found, scanned, reason = await parse_str(f"{server.url}/links/5/0")
         expected = {f"{server.url}/links/5/{i}" for i in range(5)}
         assert found == expected
         assert scanned == expected
+        assert reason == StopReason.ALL_PROCESSED
 
     async def test_scanning_timeout(self, server):
         url = f"{server.url}/delay/2"
-        found, scanned = await parse_str(url, timeout=0.1)
+        found, scanned, reason = await parse_str(url, timeout=0.1)
         assert found == {url}
         assert scanned == set()
+        assert reason == StopReason.TIMEOUT
 
     async def test_request_timeout(self, server):
         url = f"{server.url}/delay/2"
         with patch("parser.web.REQUEST_TIMEOUT", aiohttp.ClientTimeout(total=0.1)):
-            found, scanned = await parse_str(url)
+            found, scanned, reason = await parse_str(url)
         assert found == {url}
         assert scanned == set()
+        assert reason == StopReason.ALL_PROCESSED
 
     async def test_redirect(self, server):
         url = f"{server.url}/redirect/1"
-        found, scanned = await parse_str(url)
+        found, scanned, reason = await parse_str(url)
         expected = {
             url,
             f"{server.url}/get"
         }
         assert found == expected
         assert scanned == expected
+        assert reason == StopReason.ALL_PROCESSED
 
     async def test_redirect_n_times(self, server):
         url = f"{server.url}/redirect/5"
-        found, scanned = await parse_str(url)
+        found, scanned, reason = await parse_str(url)
         expected = {
             url,
             f"{server.url}/get",
@@ -119,21 +123,25 @@ class TestParse:
         }
         assert found == expected
         assert scanned == expected
+        assert reason == StopReason.ALL_PROCESSED
 
     async def test_redirect_to_other(self, server):
         url = f"{server.url}/redirect-to?url=http://example.org&status_code=302"
-        found, scanned = await parse_str(url)
+        found, scanned, reason = await parse_str(url)
         assert found == {url}
         assert scanned == {url}
+        assert reason == StopReason.ALL_PROCESSED
 
     async def test_max_scanned(self, server):
         limit = 10
         with patch("parser.web.CHECK_INTERVAL", 0):
-            found, scanned = await parse_str(f"{server.url}/links/50/0", max_scanned=limit)
+            found, scanned, reason = await parse_str(f"{server.url}/links/50/0", max_scanned=limit)
         assert abs(len(scanned) - limit) <= 1
+        assert reason == StopReason.SCANNED_LIMIT
 
     async def test_max_found(self, server):
         with patch("parser.web.CHECK_INTERVAL", 0):
-            found, scanned = await parse_str(f"{server.url}/links/10/0", max_found=10)
+            found, scanned, reason = await parse_str(f"{server.url}/links/10/0", max_found=10)
         assert len(scanned) == 1
         assert len(found) == 10
+        assert reason == StopReason.FOUND_LIMIT
