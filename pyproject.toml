@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 aiohttp = "^3.8.3"
-beautifulsoup4 = "^4.11.1"
+beautifulsoup4 = "^4.11.2"
 lxml = "^4.9.2"
 yarl = "^1.8.2"
 fake-useragent = "^1.1.1"

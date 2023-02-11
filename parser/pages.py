@@ -9,9 +9,9 @@ logger = logging.getLogger("parser.pages")
 
 class Host:
     def __init__(self, host: str, top_level: bool = False):
-        parts = host.split(".")
-        self._parts = parts[::-1] if not top_level else parts[:-3:-1]
-        self._raw = ".".join(self._parts[::-1])
+        parts = tuple(reversed(host.split(".")))
+        self._parts = parts[:2] if top_level else parts
+        self._raw = ".".join(reversed(self._parts))
 
     def __eq__(self, other: object):
         if not isinstance(other, Host):
@@ -25,7 +25,7 @@ class Host:
         return f"Host({self._raw})"
 
     def __str__(self):
-        return str(self._raw)
+        return self._raw
 
 
 def search_for_urls(html: str) -> set[str]:
