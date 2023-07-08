@@ -38,26 +38,26 @@ def parse_url(
 @click.command
 @click.argument("url", type=str)
 @click.option("--timeout", type=float,
-              help="Total timeout for scanning. Parser doesn't guarantee what parsing will be finished "
-                   "immediately after the timeout. This limit serves as a stop signal to workers.")
-@click.option("--max_scanned", type=int,
-              help="Limit for scanned urls. Parser doesn't guarantee what exactly 'n' urls will be scanned, "
-                   "but at least 'n'. This limit serves as a stop signal to workers.")
-@click.option("--max_found",
+              help="Total timeout for scanning. "
+                   "Parser doesn't guarantee what parsing will be finished immediately after the timeout.")
+@click.option("--max-scanned", type=int,
+              help="Limit for scanned urls. "
+                   "Parser doesn't guarantee what exactly 'n' urls will be scanned, but at least 'n'. ")
+@click.option("--max-found",
               type=int,
-              help="Limit for found urls. Parser doesn't guarantee what exactly 'n' urls will be found, "
-                   "but at least 'n'. This limit serves as a stop signal to workers.")
-@click.option("--request_timeout",
+              help="Limit for found urls. "
+                   "Parser doesn't guarantee what exactly 'n' urls will be found, but at least 'n'.")
+@click.option("--request-timeout",
               type=float,
               default=web.DEFAULT_REQUEST_TIMEOUT.total,
               show_default=True,
               help="Timeout for single request.")
-@click.option("--workers_number",
+@click.option("--workers-number",
               type=int,
               default=web.DEFAULT_WORKERS_NUMBER,
               show_default=True,
               help="Number of workers who scan urls concurrently.")
-@click.option("--check_interval",
+@click.option("--check-interval",
               type=float,
               default=web.DEFAULT_CHECK_INTERVAL,
               show_default=True,

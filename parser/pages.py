@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from itertools import islice
 
 from bs4 import BeautifulSoup
 from yarl import URL
@@ -9,23 +10,23 @@ logger = logging.getLogger("parser.pages")
 
 class Host:
     def __init__(self, host: str, top_level: bool = False):
-        parts = tuple(reversed(host.split(".")))
-        self._parts = parts[:2] if top_level else parts
-        self._raw = ".".join(reversed(self._parts))
+        parts = reversed(host.split("."))
+        limit = 2 if top_level else None
+        self.parts = tuple(islice(parts, 0, limit))
 
     def __eq__(self, other: object):
         if not isinstance(other, Host):
             raise NotImplementedError
-        return self._parts == other._parts
+        return self.parts == other.parts
 
     def __contains__(self, other: "Host"):
-        return self._parts[: len(other._parts)] == other._parts
-
-    def __repr__(self):
-        return f"Host({self._raw})"
+        return self.parts[: len(other.parts)] == other.parts
 
     def __str__(self):
-        return self._raw
+        return ".".join(reversed(self.parts))
+
+    def __repr__(self):
+        return f"Host({self})"
 
 
 def search_for_urls(html: str) -> set[str]:

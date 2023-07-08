@@ -16,6 +16,7 @@ def write_report(
     reason: StopReason,
     elapsed: float,
 ) -> None:
+    # TODO: test with expected json. How to compare JSON in Python?
     date = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     filename = f"{URL(start_url).host} {date}.json"
 
