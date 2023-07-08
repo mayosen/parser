@@ -18,8 +18,7 @@ class TestNormalizeUrl:
     def test_absolute(self):
         test = self.with_base("https://dvmn.org")
         assert test("https://dvmn.org") == "https://dvmn.org"
-        assert test("https://dvmn.org/payments_api/item/273/tinkoff/") \
-               == "https://dvmn.org/payments_api/item/273/tinkoff/"
+        assert test("https://dvmn.org/payments_api/item/273/tinkoff/") == "https://dvmn.org/payments_api/item/273/tinkoff/"
 
     def test_relative(self):
         test = self.with_base("https://dvmn.org")
@@ -33,8 +32,7 @@ class TestNormalizeUrl:
 
         test = self.with_base("https://www.google.ru")
         assert test("/advanced_search?hl=ru&fg=1") == "https://www.google.ru/advanced_search"
-        assert test("/history/privacyadvisor/search/unauth?utm_source=googlemenu&fg=1&cctld=ru") \
-               == "https://www.google.ru/history/privacyadvisor/search/unauth"
+        assert test("/history/privacyadvisor/search/unauth?utm_source=googlemenu&fg=1&cctld=ru") == "https://www.google.ru/history/privacyadvisor/search/unauth"
 
     def test_fragment(self):
         test = self.with_base("https://dvmn.org")

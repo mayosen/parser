@@ -86,8 +86,8 @@ def parse(
     found, scanned, reason, elapsed = parse_url(
         url, timeout, max_scanned, max_found, request_timeout, workers_number, check_interval)
 
-    found = sorted([str(url) for url in found])
-    scanned = sorted([str(url) for url in scanned])
+    found = sorted(str(url) for url in found)
+    scanned = sorted(str(url) for url in scanned)
 
     write_report(Path.cwd(), url, found, scanned, reason, elapsed)
 

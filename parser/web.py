@@ -117,7 +117,7 @@ async def work(
             continue
 
         except asyncio.TimeoutError:
-            logger.info("Cannot get response from %s", url)
+            logger.warning("Cannot get response from %s", url)
             continue
 
         finally:
