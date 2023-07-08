@@ -38,19 +38,29 @@ def parse_url(
 @click.command
 @click.argument("url", type=str)
 @click.option("--timeout", type=float,
-              help="Total timeout for scanning. Parser doesn't guarantee what parsing will be finished "
-                   "immediately after the timeout. This limit serves as a stop signal to workers.")
-@click.option("--max_scanned", type=int,
-              help="Limit for scanned urls. Parser doesn't guarantee what exactly 'n' urls will be scanned, "
-                   "but at least 'n'. This limit serves as a stop signal to workers.")
-@click.option("--max_found", type=int,
-              help="Limit for found urls. Parser doesn't guarantee what exactly 'n' urls will be found, "
-                   "but at least 'n'. This limit serves as a stop signal to workers.")
-@click.option("--request_timeout", type=float, default=web.DEFAULT_REQUEST_TIMEOUT.total, show_default=True,
+              help="Total timeout for scanning. "
+                   "Parser doesn't guarantee what parsing will be finished immediately after the timeout.")
+@click.option("--max-scanned", type=int,
+              help="Limit for scanned urls. "
+                   "Parser doesn't guarantee what exactly 'n' urls will be scanned, but at least 'n'. ")
+@click.option("--max-found",
+              type=int,
+              help="Limit for found urls. "
+                   "Parser doesn't guarantee what exactly 'n' urls will be found, but at least 'n'.")
+@click.option("--request-timeout",
+              type=float,
+              default=web.DEFAULT_REQUEST_TIMEOUT.total,
+              show_default=True,
               help="Timeout for single request.")
-@click.option("--workers_number", type=int, default=web.DEFAULT_WORKERS_NUMBER, show_default=True,
+@click.option("--workers-number",
+              type=int,
+              default=web.DEFAULT_WORKERS_NUMBER,
+              show_default=True,
               help="Number of workers who scan urls concurrently.")
-@click.option("--check_interval", type=float, default=web.DEFAULT_CHECK_INTERVAL, show_default=True,
+@click.option("--check-interval",
+              type=float,
+              default=web.DEFAULT_CHECK_INTERVAL,
+              show_default=True,
               help="Interval for checking the exceeded limits (s).")
 def parse(
     url: str,
@@ -76,8 +86,8 @@ def parse(
     found, scanned, reason, elapsed = parse_url(
         url, timeout, max_scanned, max_found, request_timeout, workers_number, check_interval)
 
-    found = sorted([str(url) for url in found])
-    scanned = sorted([str(url) for url in scanned])
+    found = sorted(str(url) for url in found)
+    scanned = sorted(str(url) for url in scanned)
 
     write_report(Path.cwd(), url, found, scanned, reason, elapsed)
 

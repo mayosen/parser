@@ -1,9 +1,11 @@
 import asyncio
+from unittest.mock import patch
 
 import aiohttp
 import httpbin
 import pytest
 from pytest_httpbin import serve
+from yarl import URL
 
 from parser.web import StopReason, UniqueQueue, parse
 
@@ -73,9 +75,13 @@ def server():
     server.stop()
 
 
+def map_to_str(urls: set[URL]) -> set[str]:
+    return {str(url) for url in urls}
+
+
 async def parse_str(url: str, **kwargs) -> tuple[set[str], set[str], StopReason]:
     found, scanned, reason = await parse(url, **kwargs)
-    return {str(url) for url in found}, {str(url) for url in scanned}, reason
+    return map_to_str(found), map_to_str(scanned), reason
 
 
 class TestParse:
@@ -141,3 +147,28 @@ class TestParse:
         assert len(scanned) == 1
         assert len(found) == 10
         assert reason == StopReason.FOUND_LIMIT
+
+    async def test_found_set_injecting(self, server):
+        url = f"{server.url}/status/200"
+        found_injected = set()
+        found_returned, scanned, reason = await parse(url, found=found_injected)
+        assert found_returned is found_injected
+        assert found_returned == {URL(url)}
+
+    async def test_scanned_set_injection(self, server):
+        url = f"{server.url}/status/200"
+        scanned_injected = set()
+        found, scanned_returned, reason = await parse(url, scanned=scanned_injected)
+        assert scanned_returned is scanned_injected
+        assert scanned_returned == {URL(url)}
+
+    async def test_fail_safe_behaviour(self, server):
+        async def raiser(*args, **kwargs):
+            raise RuntimeError
+
+        with patch("parser.web.work", raiser):
+            found, scanned, reason = await parse(f"{server.url}/status/200")
+
+        assert found is not None
+        assert scanned is not None
+        assert reason == StopReason.RUNTIME_ERROR

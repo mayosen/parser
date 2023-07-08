@@ -21,12 +21,10 @@ module_logger = logging.getLogger("parser.web")
 
 class StopReason(Enum):
     ALL_PROCESSED = "all processed"
-    TIMEOUT = "timeout"
-    FOUND_LIMIT = "found"
-    SCANNED_LIMIT = "scanned"
-
-    def __init__(self, limit_name: str | None):
-        self.limit_name = limit_name
+    TIMEOUT = "timeout limit"
+    FOUND_LIMIT = "found limit"
+    SCANNED_LIMIT = "scanned limit"
+    RUNTIME_ERROR = "runtime error"
 
 
 class StopScanning(Exception):
@@ -119,7 +117,7 @@ async def work(
             continue
 
         except asyncio.TimeoutError:
-            logger.info("Cannot get response from %s", url)
+            logger.warning("Cannot get response from %s", url)
             continue
 
         finally:
@@ -141,7 +139,7 @@ async def watch_for_numeric_limit(
     if limit:
         while True:
             if len(collection) >= limit:
-                module_logger.info("Got %s limit", reason.limit_name)
+                module_logger.info("Got %s", reason.value)
                 raise StopScanning(reason)
 
             await asyncio.sleep(check_interval)
@@ -150,8 +148,8 @@ async def watch_for_numeric_limit(
 async def parse(
     url: str,
     timeout: float | None = None,
-    max_scanned: int | None = None,
     max_found: int | None = None,
+    max_scanned: int | None = None,
     found: set[URL] | None = None,
     scanned: set[URL] | None = None,
     request_timeout: ClientTimeout = DEFAULT_REQUEST_TIMEOUT,
@@ -164,10 +162,10 @@ async def parse(
 
     if found is None:
         found = set()
-        found.add(url)
     if scanned is None:
         scanned = set()
 
+    found.add(url)
     reason = None
 
     try:
@@ -196,6 +194,14 @@ async def parse(
         module_logger.info("Got timeout limit")
         if reason is None:
             reason = StopReason.TIMEOUT
+
+    except Exception as e:
+        if isinstance(e, ExceptionGroup):
+            module_logger.error("Got unexpected errors: %s", e.exceptions)
+        else:
+            module_logger.error("Got unexpected error: %s", e)
+        if reason is None:
+            reason = StopReason.RUNTIME_ERROR
 
     return found, scanned, reason
 
