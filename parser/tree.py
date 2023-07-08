@@ -60,7 +60,7 @@ def prepare_branches(urls: Iterable[URL]) -> deque[deque[Node]]:
     return branches
 
 
-def merge_branch(parent: Optional[Node], branch: deque[Node]):
+def merge_branch(parent: Optional[Node], branch: deque[Node]) -> Node:
     if not branch:
         return parent
 
@@ -82,7 +82,6 @@ def merge_branch(parent: Optional[Node], branch: deque[Node]):
 
 
 def build_tree(urls: Iterable[URL]) -> Node:
-    # TODO: test
     branches = prepare_branches(urls)
     root = merge_branch(None, branches.popleft())
 

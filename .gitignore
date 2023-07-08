@@ -15,4 +15,3 @@ venv.bak/
 # Project
 .idea
 *.json
-poetry.lock
