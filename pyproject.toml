@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "parser"
-version = "0.1.0"
+version = "1.0.0"
 description = "Asynchronously find all site's endpoints and build its map."
 authors = ["mayosen <mayosenfarcry@gmail.com>"]
+license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
