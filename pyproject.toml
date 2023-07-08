@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "parser"
 version = "0.1.0"
-description = "Fastly find all site's endpoints and build its map."
+description = "Asynchronously find all site's endpoints and build its map."
 authors = ["mayosen <mayosenfarcry@gmail.com>"]
 readme = "README.md"
 
@@ -19,8 +19,6 @@ pytest = "^7.2.0"
 pytest-asyncio = "^0.20.3"
 pytest-httpbin = "1.0.2"
 werkzeug = "2.0.3"
-black = "^22.12.0"
-mypy = "^0.991"
 
 [tool.poetry.scripts]
 parse = "parser.cli:parse"
@@ -28,10 +26,6 @@ parse = "parser.cli:parse"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.black]
-line-length = 120
-target-version = ['py311']
 
 [tool.pytest.ini_options]
 log_cli = true
