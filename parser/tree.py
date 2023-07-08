@@ -4,7 +4,6 @@ from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 from itertools import islice, chain
-from pprint import pprint
 from typing import Iterable, Optional
 
 from yarl import URL
@@ -33,8 +32,15 @@ class Node:
     parent: Optional["Node"] = None
     children: list["Node"] = field(default_factory=list)
 
+    @classmethod
+    def domain(cls, value: str):
+        return cls(type=NodeType.DOMAIN, value=value)
+
+    @classmethod
+    def path(cls, value: str):
+        return cls(type=NodeType.PATH, value=value)
+
     def __eq__(self, other: object):
-        # TODO: test
         if not isinstance(other, Node):
             raise NotImplementedError
         return (self.type, self.value) == (other.type, other.value)
@@ -43,27 +49,7 @@ class Node:
         return f"<Node {self.type.type}, '{self.value}'>"
 
 
-"""
-def merge_branch(tree: dict, branch: deque[Node]):
-    key = branch.popleft()
-
-    if len(branch) == 0:
-        if key not in tree:
-            tree[key] = None
-        return tree
-
-    if key not in tree or tree[key] is None:
-        tree[key] = merge_branch({}, branch)
-    else:
-        merge_branch(tree[key], branch)
-        # tree[key].update(temp)
-
-    return tree
-"""
-
-
 def prepare_branches(urls: Iterable[URL]) -> deque[deque[Node]]:
-    # TODO: test
     branches = deque()
 
     for url in urls:
@@ -75,7 +61,6 @@ def prepare_branches(urls: Iterable[URL]) -> deque[deque[Node]]:
 
 
 def merge_branch(parent: Optional[Node], branch: deque[Node]):
-    # TODO: test
     if not branch:
         return parent
 
