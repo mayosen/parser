@@ -1,6 +1,7 @@
 # Parser
 
 [![MIT License][license-image]][license]
+[![Build Status][github-action-image]][github-action-url]
 
 Asynchronously find all site's endpoints and build its map.
 
@@ -78,16 +79,14 @@ Options:
 ```
 
 
-Alternatively you can use parser as library:
+Alternatively you can use parser as a library:
 
 ```python
 import asyncio
 from parser.web import parse
 
-
 async def main():
     found, scanned, reason = await parse("https://www.google.com", max_scanned=5)
-
 
 asyncio.run(main())
 ```
@@ -115,3 +114,5 @@ $ poetry run pytest
 
 [license-image]: https://img.shields.io/badge/license-MIT-blue.svg
 [license]: LICENSE.md
+[github-action-image]: https://github.com/mayosen/parser/actions/workflows/main.yml/badge.svg
+[github-action-url]: https://github.com/mayosen/parser/actions/workflows/main.yml
