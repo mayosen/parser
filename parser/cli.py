@@ -51,7 +51,7 @@ def parse_url(
               type=float,
               default=web.DEFAULT_REQUEST_TIMEOUT.total,
               show_default=True,
-              help="Timeout for single request.")
+              help="Timeout for single request (s).")
 @click.option("--workers-number",
               type=int,
               default=web.DEFAULT_WORKERS_NUMBER,

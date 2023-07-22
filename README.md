@@ -53,7 +53,7 @@ will generate file like
 ```
 
 ### Configuration
-```sh
+```
 $ poetry run parse --help
 
 Usage: parse [OPTIONS] URL
@@ -70,7 +70,7 @@ Options:
   --max-found INTEGER       Limit for found urls. Parser doesn't guarantee
                             what exactly 'n' urls will be found, but at least
                             'n'.
-  --request-timeout FLOAT   Timeout for single request.  [default: 10]
+  --request-timeout FLOAT   Timeout for single request (s).  [default: 10]
   --workers-number INTEGER  Number of workers who scan urls concurrently.
                             [default: 5]
   --check-interval FLOAT    Interval for checking the exceeded limits (s).
